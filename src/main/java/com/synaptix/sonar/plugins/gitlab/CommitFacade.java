@@ -19,15 +19,17 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import com.synaptix.gitlab.api.GitLabAPI;
-import com.synaptix.gitlab.api.models.commits.GitLabCommitDiff;
-import com.synaptix.gitlab.api.models.projects.GitLabProject;
 import org.apache.commons.io.IOUtils;
+import org.gitlab.api.GitlabAPI;
+import org.gitlab.api.models.GitlabCommitDiff;
+import org.gitlab.api.models.GitlabProject;
 import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.scan.filesystem.PathResolver;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -44,12 +46,14 @@ import java.util.regex.Pattern;
 @BatchSide
 public class CommitFacade {
 
+    private static final Logger logger = Loggers.get(CommitFacade.class.getName());
+
     static final String COMMIT_CONTEXT = "sonarqube";
 
     private final GitLabPluginConfiguration config;
     private File gitBaseDir;
-    private GitLabAPI gitLabAPI;
-    private GitLabProject gitLabProject;
+    private GitlabAPI gitLabAPI;
+    private GitlabProject gitLabProject;
     private Map<String, Set<Integer>> patchPositionMappingByFile;
 
     public CommitFacade(GitLabPluginConfiguration config) {
@@ -60,11 +64,11 @@ public class CommitFacade {
         if (findGitBaseDir(projectBaseDir) == null) {
             throw new IllegalStateException("Unable to find Git root directory. Is " + projectBaseDir + " part of a Git repository?");
         }
-        gitLabAPI = GitLabAPI.connect(config.url(), config.userToken());
+        gitLabAPI = GitlabAPI.connect(config.url(), config.userToken());
         try {
             gitLabProject = getGitLabProject();
 
-            patchPositionMappingByFile = mapPatchPositionsToLines(gitLabAPI.getGitLabAPICommits().getCommitDiffs(gitLabProject.getId(), config.commitSHA()));
+            patchPositionMappingByFile = mapPatchPositionsToLines(gitLabAPI.getCommitDiffs(gitLabProject.getId(), config.commitSHA()));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
@@ -81,18 +85,19 @@ public class CommitFacade {
         return findGitBaseDir(baseDir.getParentFile());
     }
 
-    private GitLabProject getGitLabProject() throws IOException {
+    private GitlabProject getGitLabProject() throws IOException {
         if (config.projectId() == null) {
-            throw new IllegalStateException("Unable found project for null project name");
+            throw new IllegalStateException("Missing required attribute: " + GitLabPlugin.GITLAB_PROJECT_ID);
         }
-        List<GitLabProject> projects = gitLabAPI.getGitLabAPIProjects().getProjects(null, null, null, null, null);
+        List<GitlabProject> projects = gitLabAPI.getProjects();
         if (projects == null) {
-            throw new IllegalStateException("Unable found project for " + config.projectId());
+            throw new IllegalStateException("Unable to find projects under this location: " + config.url());
         }
-        List<GitLabProject> res = new ArrayList<>();
-        for(GitLabProject project : projects) {
+        List<GitlabProject> res = new ArrayList<>();
+        for(GitlabProject project : projects) {
             if (config.projectId().equals(project.getId().toString()) || config.projectId().equals(project.getPathWithNamespace()) || config.projectId().equals(project.getHttpUrl())
                     || config.projectId().equals(project.getSshUrl()) || config.projectId().equals(project.getWebUrl()) || config.projectId().equals(project.getNameWithNamespace())) {
+                logger.debug("found matching project with project id: {}", project.getId());
                 res.add(project);
             }
         }
@@ -105,16 +110,9 @@ public class CommitFacade {
         return res.get(0);
     }
 
-    private static boolean isEqualsNameWithNamespace(String current, String f) {
-        if (current == null || f == null) {
-            return false;
-        }
-        return current.replaceAll(" ", "").equalsIgnoreCase(f.replaceAll(" ", ""));
-    }
-
-    private static Map<String, Set<Integer>> mapPatchPositionsToLines(List<GitLabCommitDiff> diffs) throws IOException {
+    private static Map<String, Set<Integer>> mapPatchPositionsToLines(List<GitlabCommitDiff> diffs) throws IOException {
         Map<String, Set<Integer>> patchPositionMappingByFile = new HashMap<>();
-        for (GitLabCommitDiff file : diffs) {
+        for (GitlabCommitDiff file : diffs) {
             Set<Integer> patchLocationMapping = new HashSet<>();
             patchPositionMappingByFile.put(file.getNewPath(), patchLocationMapping);
             String patch = file.getDiff();
@@ -151,7 +149,7 @@ public class CommitFacade {
 
     public void createOrUpdateSonarQubeStatus(String status, String statusDescription) {
         try {
-            gitLabAPI.getGitLabAPICommits().postCommitStatus(gitLabProject.getId(), config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
+            gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to update commit status", e);
         }
@@ -177,7 +175,7 @@ public class CommitFacade {
         String fullpath = getPath(inputFile);
         //System.out.println("Review : "+fullpath+" line : "+line);
         try {
-            gitLabAPI.getGitLabAPICommits().postCommitComments(gitLabProject.getId(), config.commitSHA(), body, fullpath, line, "new");
+            gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), body, fullpath, line.toString(), "new");
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create or update review comment in file " + fullpath + " at line " + line, e);
         }
@@ -189,7 +187,7 @@ public class CommitFacade {
 
     public void addGlobalComment(String comment) {
         try {
-            gitLabAPI.getGitLabAPICommits().postCommitComments(gitLabProject.getId(), config.commitSHA(), comment, null, null, null);
+            gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), comment, null, null, null);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to comment the commit", e);
         }

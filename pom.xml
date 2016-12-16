@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.synaptix</groupId>
     <artifactId>sonar-gitlab-plugin</artifactId>
-    <version>1.8.1-SNAPSHOT</version>
+    <version>1.8.2-SNAPSHOT</version>
     <name>SonarQube :: GitLab Plugin</name>
     <description>GitLab Plugin for Reporting</description>
     <packaging>sonar-plugin</packaging>
@@ -27,7 +27,7 @@
         <license.mailto>gabriel.allaigre@talanlabs.com</license.mailto>
         <license.owner>Talanlabs</license.owner>
 
-        <sonar.version>5.4-RC1</sonar.version>
+        <sonar.version>5.5</sonar.version>
         <sonar.pluginName>GitLab</sonar.pluginName>
         <sonar.pluginClass>com.synaptix.sonar.plugins.gitlab.GitLabPlugin</sonar.pluginClass>
     </properties>
@@ -85,11 +85,21 @@
             <version>2.0.3</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.gitlab/java-gitlab-api -->
+        <dependency>
+            <groupId>org.gitlab</groupId>
+            <artifactId>java-gitlab-api</artifactId>
+            <version>1.2.7</version>
+        </dependency>
+
+        <!--
         <dependency>
             <groupId>com.synaptix</groupId>
             <artifactId>java-gitlab-api</artifactId>
             <version>${java-gitlab-api.version}</version>
         </dependency>
+        -->
         <!--dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
