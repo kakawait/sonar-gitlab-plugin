@@ -46,6 +46,6 @@ public class CommitProjectBuilder extends ProjectBuilder {
 
         commitFacade.init(context.projectReactor().getRoot().getBaseDir());
 
-        commitFacade.createOrUpdateSonarQubeStatus("pending", "SonarQube analysis in progress");
+        commitFacade.createOrUpdateSonarQubeStatus("running", "SonarQube analysis in progress");
     }
 }

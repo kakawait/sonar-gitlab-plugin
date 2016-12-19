@@ -151,7 +151,10 @@ public class CommitFacade {
         try {
             gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
         } catch (IOException e) {
-            throw new IllegalStateException(String.format("Unable to update commit status (%s)", status), e);
+            String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, context=%s, ignore_ssl=%s, description=%s]",
+                    status, gitLabProject.getId(), config.commitSHA(), config.refName(), COMMIT_CONTEXT, gitLabAPI.isIgnoreCertificateErrors(), statusDescription
+            );
+            throw new IllegalStateException(msg, e);
         }
     }
 
