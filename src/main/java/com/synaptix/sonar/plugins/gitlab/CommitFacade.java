@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 @BatchSide
 public class CommitFacade {
 
-    private static final Logger logger = Loggers.get(CommitFacade.class.getName());
+    private static final Logger logger = Loggers.get(CommitFacade.class);
 
     static final String COMMIT_CONTEXT = "sonarqube";
 
@@ -62,7 +62,7 @@ public class CommitFacade {
 
     public void init(File projectBaseDir) {
         if (findGitBaseDir(projectBaseDir) == null) {
-            throw new IllegalStateException("Unable to find Git root directory. Is " + projectBaseDir + " part of a Git repository?");
+            throw new IllegalStateException(String.format("Unable to find Git root directory. Is (%s) part of a Git repository?", projectBaseDir));
         }
         gitLabAPI = GitlabAPI.connect(config.url(), config.userToken());
         try {
@@ -151,7 +151,7 @@ public class CommitFacade {
         try {
             gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to update commit status", e);
+            throw new IllegalStateException(String.format("Unable to update commit status (%s)", status), e);
         }
     }
 
@@ -166,7 +166,9 @@ public class CommitFacade {
     public String getGitLabUrl(InputFile inputFile, Integer issueLine) {
         if (inputFile != null) {
             String path = getPath(inputFile);
-            return gitLabProject.getWebUrl() + "/blob/" + config.commitSHA() + "/" + path + (issueLine != null ? ("#L" + issueLine) : "");
+            String rtn = gitLabProject.getWebUrl() + "/blob/" + config.commitSHA() + "/" + path + (issueLine != null ? ("#L" + issueLine) : "");
+            logger.info("Gitlab URL: {}", rtn);
+            return rtn;
         }
         return null;
     }
@@ -189,7 +191,7 @@ public class CommitFacade {
         try {
             gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), comment, null, null, null);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to comment the commit", e);
+            throw new IllegalStateException(String.format("Unable to comment the commit (%s)", comment) , e);
         }
     }
 }
