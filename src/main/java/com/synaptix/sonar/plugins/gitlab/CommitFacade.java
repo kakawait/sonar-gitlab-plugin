@@ -64,7 +64,7 @@ public class CommitFacade {
         if (findGitBaseDir(projectBaseDir) == null) {
             throw new IllegalStateException(String.format("Unable to find Git root directory. Is (%s) part of a Git repository?", projectBaseDir));
         }
-        gitLabAPI = GitlabAPI.connect(config.url(), config.userToken());
+        gitLabAPI = GitlabAPI.connect(config.url(), config.userToken()).ignoreCertificateErrors(config.ignoreSSL());
         try {
             gitLabProject = getGitLabProject();
 

@@ -89,4 +89,7 @@ public class GitLabPluginConfiguration {
         return settings.getBoolean(GitLabPlugin.GITLAB_COMMENT_NO_ISSUE);
     }
 
+    public boolean ignoreSSL() {
+        return settings.getBoolean(GitLabPlugin.GITLAB_COMMENT_NO_ISSUE);
+    }
 }
