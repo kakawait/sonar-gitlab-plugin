@@ -148,12 +148,14 @@ public class CommitFacade {
     }
 
     public void createOrUpdateSonarQubeStatus(String status, String statusDescription) {
+        logger.info("####### Call to commit status update with: status={}, desc={}", status, statusDescription);
         try {
             gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
         } catch (IOException e) {
             String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, context=%s, ignore_ssl=%s, build_init_state=%s, description=%s]",
                     status, gitLabProject.getId(), config.commitSHA(), config.refName(), COMMIT_CONTEXT, gitLabAPI.isIgnoreCertificateErrors(), config.getBuildInitState(), statusDescription
             );
+            logger.error(msg);
             throw new IllegalStateException(msg, e);
         }
     }

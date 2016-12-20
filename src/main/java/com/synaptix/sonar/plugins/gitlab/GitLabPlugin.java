@@ -46,28 +46,30 @@ public class GitLabPlugin extends SonarPlugin {
     public static final String CATEGORY = "gitlab";
     public static final String SUBCATEGORY = "reporting";
 
+    private static int serverIndex = 0;
+
     private static List<PropertyDefinition> definitions() {
         return Arrays
                 .asList(PropertyDefinition.builder(GITLAB_URL).name("GitLab url").description("URL to access GitLab.").category(CATEGORY).subCategory(SUBCATEGORY).defaultValue("https://gitlab.com")
-                                .index(1).build(),
-                        PropertyDefinition.builder(GITLAB_USER_TOKEN).name("GitLab User Token").description("GitLab user token is developer role.").category(CATEGORY).subCategory(SUBCATEGORY).index(2)
+                                .index(serverIndex++).build(),
+                        PropertyDefinition.builder(GITLAB_USER_TOKEN).name("GitLab User Token").description("GitLab user token is developer role.").category(CATEGORY).subCategory(SUBCATEGORY).index(serverIndex++)
                                 .build(), PropertyDefinition.builder(GITLAB_MAX_GLOBAL_ISSUES).name("GitLab Max Global Issues").description("Max issues to show in global comment.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).type(PropertyType.INTEGER).defaultValue(String.valueOf(10)).index(3).build(),
+                                .subCategory(SUBCATEGORY).type(PropertyType.INTEGER).defaultValue(String.valueOf(10)).index(serverIndex++).build(),
                         PropertyDefinition.builder(GITLAB_PROJECT_ID).name("GitLab Project id")
                                 .description("The unique id, path with namespace, name with namespace, web url, ssh url or http url of the current project that GitLab.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).index(4).onlyOnQualifiers(Qualifiers.PROJECT).build(),
+                                .subCategory(SUBCATEGORY).index(serverIndex++).onlyOnQualifiers(Qualifiers.PROJECT).build(),
                         PropertyDefinition.builder(GITLAB_COMMIT_SHA).name("GitLab Commit SHA").description("The commit revision for which project is built.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).index(5).hidden().build(),
+                                .subCategory(SUBCATEGORY).index(serverIndex++).hidden().build(),
                         PropertyDefinition.builder(GITLAB_REF_NAME).name("GitLab Ref Name").description("The commit revision for which project is built.").category(CATEGORY).subCategory(SUBCATEGORY)
-                                .index(6).hidden().build(),
+                                .index(serverIndex++).hidden().build(),
                         PropertyDefinition.builder(GITLAB_IGNORE_FILE).name("GitLab Ingore file").description("Ignore issues on files no modified by the commit").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(7).hidden().build(),
+                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(serverIndex++).hidden().build(),
                         PropertyDefinition.builder(GITLAB_COMMENT_NO_ISSUE).name("GitLab Comment On No New Issue").description("Add a comment even when there is no new issue.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(8).build(),
+                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(serverIndex++).build(),
                         PropertyDefinition.builder(GITLAB_IGNORE_SSL).name("GitLab ignore SSL.").description("Ignore certificate for https connections.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(9).build(),
+                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(serverIndex++).build(),
                         PropertyDefinition.builder(GITLAB_BUILD_INIT_STATE).name("GitLab Build Initial State").description("Indicate what state should be the first when build commit status update is called.").category(CATEGORY).subCategory(SUBCATEGORY)
-                                .index(10).options("pending","running").defaultValue("pending").build()
+                                .type(PropertyType.SINGLE_SELECT_LIST).options("pending","running").defaultValue("pending").index(serverIndex++).build()
 
                         /*,
                         PropertyDefinition.builder(GITLAB_GLOBAL_TEMPLATE).name("GitLab Global Template").description("Template for global comment in commit.").category(CATEGORY)
