@@ -93,4 +93,9 @@ public class GitLabPluginConfiguration {
     public boolean ignoreSSL() {
         return settings.getBoolean(GitLabPlugin.GITLAB_IGNORE_SSL);
     }
+
+    @CheckForNull
+    public String getBuildInitState() {
+        return settings.getString(GitLabPlugin.GITLAB_BUILD_INIT_STATE);
+    }
 }

@@ -41,6 +41,7 @@ public class GitLabPlugin extends SonarPlugin {
     public static final String GITLAB_INLINE_TEMPLATE = "sonar.gitlab.inline_template";
     public static final String GITLAB_COMMENT_NO_ISSUE = "sonar.gitlab.comment_no_issue";
     public static final String GITLAB_IGNORE_SSL = "sonar.gitlab.ignore_ssl";
+    public static final String GITLAB_BUILD_INIT_STATE = "sonar.gitlab.build_init_state";
 
     public static final String CATEGORY = "gitlab";
     public static final String SUBCATEGORY = "reporting";
@@ -61,10 +62,13 @@ public class GitLabPlugin extends SonarPlugin {
                                 .index(6).hidden().build(),
                         PropertyDefinition.builder(GITLAB_IGNORE_FILE).name("GitLab Ingore file").description("Ignore issues on files no modified by the commit").category(CATEGORY)
                                 .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(7).hidden().build(),
-                        PropertyDefinition.builder(GITLAB_COMMENT_NO_ISSUE).name("GitLab Comment when no new issue").description("Add a comment even when there is no new issue.").category(CATEGORY)
+                        PropertyDefinition.builder(GITLAB_COMMENT_NO_ISSUE).name("GitLab Comment On No New Issue").description("Add a comment even when there is no new issue.").category(CATEGORY)
                                 .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(8).build(),
                         PropertyDefinition.builder(GITLAB_IGNORE_SSL).name("GitLab ignore SSL.").description("Ignore certificate for https connections.").category(CATEGORY)
-                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(9).build()
+                                .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(9).build(),
+                        PropertyDefinition.builder(GITLAB_BUILD_INIT_STATE).name("GitLab Build Initial State").description("Indicate what state should be the first when build commit status update is called.").category(CATEGORY).subCategory(SUBCATEGORY)
+                                .index(10).options("pending","running").defaultValue("pending").build()
+
                         /*,
                         PropertyDefinition.builder(GITLAB_GLOBAL_TEMPLATE).name("GitLab Global Template").description("Template for global comment in commit.").category(CATEGORY)
                                 .subCategory(SUBCATEGORY).type(PropertyType.TEXT).index(8).build(),
