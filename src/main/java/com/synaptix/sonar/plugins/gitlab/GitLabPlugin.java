@@ -45,6 +45,7 @@ public class GitLabPlugin extends SonarPlugin {
 
     public static final String CATEGORY = "gitlab";
     public static final String SUBCATEGORY = "reporting";
+    public static final List<String> BUILD_INIT_STATES = Arrays.asList("pending", "running");
 
     private static int serverIndex = 0;
 
@@ -69,7 +70,7 @@ public class GitLabPlugin extends SonarPlugin {
                         PropertyDefinition.builder(GITLAB_IGNORE_SSL).name("GitLab ignore SSL.").description("Ignore certificate for https connections.").category(CATEGORY)
                                 .subCategory(SUBCATEGORY).type(PropertyType.BOOLEAN).defaultValue(String.valueOf(false)).index(serverIndex++).build(),
                         PropertyDefinition.builder(GITLAB_BUILD_INIT_STATE).name("GitLab Build Initial State").description("Indicate what state should be the first when build commit status update is called.").category(CATEGORY).subCategory(SUBCATEGORY)
-                                .type(PropertyType.SINGLE_SELECT_LIST).options("pending","running").defaultValue("pending").index(serverIndex++).build()
+                                .type(PropertyType.SINGLE_SELECT_LIST).options(BUILD_INIT_STATES).defaultValue("pending").index(serverIndex++).build()
 
                         /*,
                         PropertyDefinition.builder(GITLAB_GLOBAL_TEMPLATE).name("GitLab Global Template").description("Template for global comment in commit.").category(CATEGORY)

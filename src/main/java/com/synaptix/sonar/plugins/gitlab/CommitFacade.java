@@ -34,6 +34,7 @@ import org.sonar.api.utils.log.Loggers;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -148,9 +149,13 @@ public class CommitFacade {
     }
 
     public void createOrUpdateSonarQubeStatus(String status, String statusDescription) {
-        logger.info("####### Call to commit status update with: status={}, desc={}", status, statusDescription);
+        logger.info("Call to commit status update with: status={}, desc={}", status, statusDescription);
         try {
-            gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
+            if (GitLabPlugin.BUILD_INIT_STATES.contains(status)) {
+                logger.info("Skipping commit status update since there are builds for this commit ({}) that will fail for consecutive update to this state ({}).", config.commitSHA(), status);
+            } else {
+                gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
+            }
         } catch (IOException e) {
             String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, context=%s, ignore_ssl=%s, build_init_state=%s, description=%s]",
                     status, gitLabProject.getId(), config.commitSHA(), config.refName(), COMMIT_CONTEXT, gitLabAPI.isIgnoreCertificateErrors(), config.getBuildInitState(), statusDescription
@@ -198,5 +203,10 @@ public class CommitFacade {
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Unable to comment the commit (%s)", comment) , e);
         }
+    }
+
+    private boolean isCommitBuildInAnyEnqueueState(Serializable projectId, String sha) throws IOException {
+        // this API is broken in gitlab
+        return gitLabAPI.getCommitBuilds(projectId, sha).stream().anyMatch(e -> GitLabPlugin.BUILD_INIT_STATES.contains(e.getStatus()));
     }
 }
