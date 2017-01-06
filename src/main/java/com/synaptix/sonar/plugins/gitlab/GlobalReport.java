@@ -20,16 +20,16 @@
 package com.synaptix.sonar.plugins.gitlab;
 
 import org.sonar.api.batch.postjob.issue.PostJobIssue;
-import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.Severity;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GlobalReport {
+import javax.annotation.Nullable;
+
+class GlobalReport {
 
     private static final String[] SEVERITIES = { Severity.BLOCKER, Severity.CRITICAL, Severity.MAJOR, Severity.MINOR, Severity.INFO };
 
@@ -39,7 +39,7 @@ public class GlobalReport {
     private Map<String, List<String>> notReportedOnDiffMap = new HashMap<>();
     private int notReportedIssueCount = 0;
 
-    public GlobalReport(GitLabPluginConfiguration gitLabPluginConfiguration, MarkDownUtils markDownUtils) {
+    GlobalReport(GitLabPluginConfiguration gitLabPluginConfiguration, MarkDownUtils markDownUtils) {
         super();
 
         this.gitLabPluginConfiguration = gitLabPluginConfiguration;
@@ -50,14 +50,15 @@ public class GlobalReport {
         this.newIssuesBySeverity[Severity.ALL.indexOf(severity)]++;
     }
 
-    public String formatForMarkdown() {
+    String formatForMarkdown() {
         StringBuilder sb = new StringBuilder();
         printNewIssuesMarkdown(sb);
         if (hasNewIssue()) {
             sb.append("\nWatch the comments in this conversation to review them.");
         }
         if (notReportedIssueCount > 0) {
-            sb.append("\nNote: the following issues could not be reported as comments because they are located on lines that are not displayed in this commit:\n");
+            sb.append("\nNote: the following issues could not be reported as comments " +
+                    "because they are located on lines that are not displayed in this commit:\n");
 
             int notReportedDisplayedIssueCount = 0;
             int i = 0;
@@ -82,13 +83,13 @@ public class GlobalReport {
         return sb.toString();
     }
 
-    public String getStatusDescription() {
+    String getStatusDescription() {
         StringBuilder sb = new StringBuilder();
         printNewIssuesInline(sb);
         return sb.toString();
     }
 
-    public String getStatus() {
+    String getStatus() {
         return (newIssues(Severity.BLOCKER) > 0 || newIssues(Severity.CRITICAL) > 0) ? "failed" : "success";
     }
 
@@ -98,7 +99,8 @@ public class GlobalReport {
 
     private void printNewIssuesMarkdown(StringBuilder sb) {
         sb.append("SonarQube analysis reported ");
-        int newIssues = newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR) + newIssues(Severity.MINOR) + newIssues(Severity.INFO);
+        int newIssues = newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR)
+                + newIssues(Severity.MINOR) + newIssues(Severity.INFO);
         if (newIssues > 0) {
             sb.append(newIssues).append(" issue" + (newIssues > 1 ? "s" : "")).append(":\n");
             for (String severity : SEVERITIES) {
@@ -111,7 +113,8 @@ public class GlobalReport {
 
     private void printNewIssuesInline(StringBuilder sb) {
         sb.append("SonarQube reported ");
-        int newIssues = newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR) + newIssues(Severity.MINOR) + newIssues(Severity.INFO);
+        int newIssues = newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR)
+                + newIssues(Severity.MINOR) + newIssues(Severity.INFO);
         if (newIssues > 0) {
             sb.append(newIssues).append(" issue" + (newIssues > 1 ? "s" : "")).append(",");
             int newCriticalOrBlockerIssues = newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL);
@@ -141,11 +144,12 @@ public class GlobalReport {
     private void printNewIssuesForMarkdown(StringBuilder sb, String severity) {
         int issueCount = newIssues(severity);
         if (issueCount > 0) {
-            sb.append("* ").append(MarkDownUtils.getEmojiForSeverity(severity)).append(" ").append(issueCount).append(" ").append(severity.toLowerCase()).append("\n");
+            sb.append("* ").append(MarkDownUtils.getEmojiForSeverity(severity)).append(" ").append(issueCount)
+              .append(" ").append(severity.toLowerCase()).append("\n");
         }
     }
 
-    public void process(PostJobIssue issue, @Nullable String gitLabUrl, boolean reportedOnDiff) {
+    void process(PostJobIssue issue, @Nullable String gitLabUrl, boolean reportedOnDiff) {
         increment(issue.severity().name());
         if (!reportedOnDiff) {
             notReportedIssueCount++;
@@ -156,12 +160,14 @@ public class GlobalReport {
                 notReportedOnDiffMap.put(issue.severity().name(), notReportedOnDiffs);
             }
 
+            String comment = markDownUtils.globalIssue(issue.severity().name(), issue.message(),
+                    issue.ruleKey().toString(), gitLabUrl, issue.componentKey());
             notReportedOnDiffs
-                    .add(new StringBuilder().append("* ").append(markDownUtils.globalIssue(issue.severity().name(), issue.message(), issue.ruleKey().toString(), gitLabUrl, issue.componentKey())).toString());
+                    .add(new StringBuilder().append("* ").append(comment).toString());
         }
     }
 
-    public boolean hasNewIssue() {
+    boolean hasNewIssue() {
         return newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR) + newIssues(Severity.MINOR) + newIssues(Severity.INFO) > 0;
     }
 }
