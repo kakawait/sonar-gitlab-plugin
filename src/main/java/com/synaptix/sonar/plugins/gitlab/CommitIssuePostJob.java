@@ -19,20 +19,22 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.sonar.api.batch.CheckProject;
-import org.sonar.api.batch.SensorContext;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.postjob.PostJob;
+import org.sonar.api.batch.postjob.PostJobContext;
+import org.sonar.api.batch.postjob.PostJobDescriptor;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.issue.ProjectIssues;
-import org.sonar.api.resources.Project;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 /**
  * Compute comments to be added on the commit.
  */
-public class CommitIssuePostJob implements org.sonar.api.batch.PostJob, CheckProject {
+public class CommitIssuePostJob implements PostJob {
 
     private final GitLabPluginConfiguration gitLabPluginConfiguration;
     private final CommitFacade commitFacade;
@@ -49,12 +51,12 @@ public class CommitIssuePostJob implements org.sonar.api.batch.PostJob, CheckPro
     }
 
     @Override
-    public boolean shouldExecuteOnProject(Project project) {
-        return gitLabPluginConfiguration.isEnabled();
+    public void describe(@Nonnull PostJobDescriptor descriptor) {
+        descriptor.name("GitLab issue publisher").requireProperty(GitLabPlugin.GITLAB_COMMIT_SHA);
     }
 
     @Override
-    public void executeOn(Project project, SensorContext context) {
+    public void execute(@Nonnull PostJobContext context) {
         GlobalReport report = new GlobalReport(gitLabPluginConfiguration, markDownUtils);
 
         Map<InputFile, Map<Integer, StringBuilder>> commentsToBeAddedByLine = processIssues(report);
@@ -93,7 +95,7 @@ public class CommitIssuePostJob implements org.sonar.api.batch.PostJob, CheckPro
                     String message = issue.message();
                     String ruleKey = issue.ruleKey().toString();
                     if (!commentToBeAddedByFileAndByLine.containsKey(inputFile)) {
-                        commentToBeAddedByFileAndByLine.put(inputFile, new HashMap<Integer, StringBuilder>());
+                        commentToBeAddedByFileAndByLine.put(inputFile, new HashMap<>());
                     }
                     Map<Integer, StringBuilder> commentsByLine = commentToBeAddedByFileAndByLine.get(inputFile);
                     if (!commentsByLine.containsKey(line)) {

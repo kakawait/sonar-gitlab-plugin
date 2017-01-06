@@ -19,19 +19,20 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.InstantiationStrategy;
+import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.InputFile;
 
-import javax.annotation.CheckForNull;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.annotation.CheckForNull;
 
 /**
  * This is a temporary solution before being able to use new postjob API in SQ 5.2.
  */
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
-@BatchSide
+@ScannerSide
 public class InputFileCache {
 
   private final Map<String, InputFile> inputFileByKey = new HashMap<>();

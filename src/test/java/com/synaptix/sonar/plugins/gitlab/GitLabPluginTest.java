@@ -20,14 +20,19 @@
 package com.synaptix.sonar.plugins.gitlab;
 
 import org.junit.Test;
+import org.sonar.api.Plugin;
+import org.sonar.api.internal.SonarRuntimeImpl;
+import org.sonar.api.utils.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GitLabPluginTest {
 
-  @Test
-  public void uselessTest() {
-    assertThat(new GitLabPlugin().getExtensions().size()).isGreaterThan(1);
-  }
+    @Test
+    public void uselessTest() {
+        Plugin.Context context = new Plugin.Context(SonarRuntimeImpl.forSonarLint(Version.parse("6.2")));
+        new GitLabPlugin().define(context);
+        assertThat(context.getExtensions().size()).isGreaterThan(1);
+    }
 
 }
