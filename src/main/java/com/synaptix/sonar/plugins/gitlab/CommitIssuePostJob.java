@@ -19,11 +19,13 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.postjob.PostJob;
 import org.sonar.api.batch.postjob.PostJobContext;
 import org.sonar.api.batch.postjob.PostJobDescriptor;
-import org.sonar.api.issue.Issue;
+import org.sonar.api.batch.postjob.issue.PostJobIssue;
+import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.issue.ProjectIssues;
 
 import java.util.HashMap;
@@ -39,14 +41,12 @@ public class CommitIssuePostJob implements PostJob {
     private final GitLabPluginConfiguration gitLabPluginConfiguration;
     private final CommitFacade commitFacade;
     private final ProjectIssues projectIssues;
-    private final InputFileCache inputFileCache;
     private final MarkDownUtils markDownUtils;
 
-    public CommitIssuePostJob(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade, ProjectIssues projectIssues, InputFileCache inputFileCache, MarkDownUtils markDownUtils) {
+    public CommitIssuePostJob(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade, ProjectIssues projectIssues, MarkDownUtils markDownUtils) {
         this.gitLabPluginConfiguration = gitLabPluginConfiguration;
         this.commitFacade = commitFacade;
         this.projectIssues = projectIssues;
-        this.inputFileCache = inputFileCache;
         this.markDownUtils = markDownUtils;
     }
 
@@ -59,7 +59,7 @@ public class CommitIssuePostJob implements PostJob {
     public void execute(@Nonnull PostJobContext context) {
         GlobalReport report = new GlobalReport(gitLabPluginConfiguration, markDownUtils);
 
-        Map<InputFile, Map<Integer, StringBuilder>> commentsToBeAddedByLine = processIssues(report);
+        Map<InputFile, Map<Integer, StringBuilder>> commentsToBeAddedByLine = processIssues(context, report);
 
         updateReviewComments(commentsToBeAddedByLine);
 
@@ -75,22 +75,26 @@ public class CommitIssuePostJob implements PostJob {
         return "GitLab Commit Issue Publisher";
     }
 
-    private Map<InputFile, Map<Integer, StringBuilder>> processIssues(GlobalReport report) {
+    private Map<InputFile, Map<Integer, StringBuilder>> processIssues(PostJobContext context, GlobalReport report) {
         Map<InputFile, Map<Integer, StringBuilder>> commentToBeAddedByFileAndByLine = new HashMap<>();
-        for (Issue issue : projectIssues.issues()) {
-            String severity = issue.severity();
+        for (PostJobIssue issue : context.issues()) {
+            Severity severity = issue.severity();
             boolean isNew = issue.isNew();
             if (!isNew) {
                 continue;
             }
             Integer issueLine = issue.line();
-            InputFile inputFile = inputFileCache.byKey(issue.componentKey());
-            if (gitLabPluginConfiguration.ignoreFileNotModified() && inputFile != null && !commitFacade.hasFile(inputFile)) {
+            InputComponent component = issue.inputComponent();
+            if (component == null || !component.isFile() || !(component instanceof InputFile)) {
+                continue;
+            }
+            InputFile inputFile = (InputFile) component;
+            if (gitLabPluginConfiguration.ignoreFileNotModified() && !commitFacade.hasFile(inputFile)) {
                 continue;
             }
             boolean reportedInline = false;
-            if (inputFile != null && issueLine != null) {
-                int line = issueLine.intValue();
+            if (issueLine != null) {
+                int line = issueLine;
                 if (commitFacade.hasFileLine(inputFile, line)) {
                     String message = issue.message();
                     String ruleKey = issue.ruleKey().toString();
@@ -101,7 +105,7 @@ public class CommitIssuePostJob implements PostJob {
                     if (!commentsByLine.containsKey(line)) {
                         commentsByLine.put(line, new StringBuilder());
                     }
-                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity, message, ruleKey)).append("\n");
+                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity.name(), message, ruleKey)).append("\n");
                     reportedInline = true;
                 }
             }

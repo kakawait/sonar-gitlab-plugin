@@ -19,6 +19,7 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
+import org.sonar.api.batch.postjob.issue.PostJobIssue;
 import org.sonar.api.issue.Issue;
 import org.sonar.api.rule.Severity;
 
@@ -144,19 +145,19 @@ public class GlobalReport {
         }
     }
 
-    public void process(Issue issue, @Nullable String gitLabUrl, boolean reportedOnDiff) {
-        increment(issue.severity());
+    public void process(PostJobIssue issue, @Nullable String gitLabUrl, boolean reportedOnDiff) {
+        increment(issue.severity().name());
         if (!reportedOnDiff) {
             notReportedIssueCount++;
 
-            List<String> notReportedOnDiffs = notReportedOnDiffMap.get(issue.severity());
+            List<String> notReportedOnDiffs = notReportedOnDiffMap.get(issue.severity().name());
             if (notReportedOnDiffs == null) {
                 notReportedOnDiffs = new ArrayList<>();
-                notReportedOnDiffMap.put(issue.severity(), notReportedOnDiffs);
+                notReportedOnDiffMap.put(issue.severity().name(), notReportedOnDiffs);
             }
 
             notReportedOnDiffs
-                    .add(new StringBuilder().append("* ").append(markDownUtils.globalIssue(issue.severity(), issue.message(), issue.ruleKey().toString(), gitLabUrl, issue.componentKey())).toString());
+                    .add(new StringBuilder().append("* ").append(markDownUtils.globalIssue(issue.severity().name(), issue.message(), issue.ruleKey().toString(), gitLabUrl, issue.componentKey())).toString());
         }
     }
 
