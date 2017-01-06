@@ -134,6 +134,8 @@ public class GitLabPlugin extends SonarPlugin {
                         .description("Ignore SSL certificate for https GitLab connections.")
                         .category(CATEGORY)
                         .subCategory(INSTANCE_SUBCATEGORY)
+                        .type(PropertyType.BOOLEAN)
+                        .defaultValue(String.valueOf(false))
                         .index(9)
                         .build(),
                 PropertyDefinition
