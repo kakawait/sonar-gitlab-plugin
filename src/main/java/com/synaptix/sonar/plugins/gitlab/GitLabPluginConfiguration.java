@@ -19,14 +19,14 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.sonar.api.batch.BatchSide;
 import org.sonar.api.batch.InstantiationStrategy;
+import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.config.Settings;
 
 import javax.annotation.CheckForNull;
 
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
-@BatchSide
+@ScannerSide
 public class GitLabPluginConfiguration {
 
     private Settings settings;
@@ -72,16 +72,6 @@ public class GitLabPluginConfiguration {
     @CheckForNull
     public boolean ignoreFileNotModified() {
         return settings.getBoolean(GitLabPlugin.GITLAB_IGNORE_FILE);
-    }
-
-    @CheckForNull
-    public String globalTemplate() {
-        return settings.getString(GitLabPlugin.GITLAB_GLOBAL_TEMPLATE);
-    }
-
-    @CheckForNull
-    public String inlineTemplate() {
-        return settings.getString(GitLabPlugin.GITLAB_INLINE_TEMPLATE);
     }
 
     @CheckForNull

@@ -19,17 +19,18 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
+import org.sonar.api.Plugin;
 import org.sonar.api.PropertyType;
-import org.sonar.api.SonarPlugin;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class GitLabPlugin extends SonarPlugin {
+import javax.annotation.Nonnull;
+
+public class GitLabPlugin implements Plugin {
 
     static final String GITLAB_URL = "sonar.gitlab.url";
     static final String GITLAB_MAX_GLOBAL_ISSUES = "sonar.gitlab.max_global_issues";
@@ -38,8 +39,6 @@ public class GitLabPlugin extends SonarPlugin {
     static final String GITLAB_COMMIT_SHA = "sonar.gitlab.commit_sha";
     static final String GITLAB_REF_NAME = "sonar.gitlab.ref_name";
     static final String GITLAB_IGNORE_FILE = "sonar.gitlab.ignore_file";
-    static final String GITLAB_GLOBAL_TEMPLATE = "sonar.gitlab.global_template";
-    static final String GITLAB_INLINE_TEMPLATE = "sonar.gitlab.inline_template";
     static final String GITLAB_COMMENT_NO_ISSUE = "sonar.gitlab.comment_no_issue";
     static final String GITLAB_IGNORE_SSL = "sonar.gitlab.ignore_ssl";
     static final String GITLAB_BUILD_INIT_STATE = "sonar.gitlab.build_init_state";
@@ -153,12 +152,9 @@ public class GitLabPlugin extends SonarPlugin {
     }
 
     @Override
-    public List getExtensions() {
-        List extensions = new ArrayList();
-        extensions.addAll(Arrays.asList(CommitIssuePostJob.class, GitLabPluginConfiguration.class,
-                CommitProjectBuilder.class, CommitFacade.class, InputFileCacheSensor.class, InputFileCache.class,
-                MarkDownUtils.class));
-        extensions.addAll(definitions());
-        return extensions;
+    public void define(@Nonnull Context context) {
+        context.addExtensions(CommitIssuePostJob.class, GitLabPluginConfiguration.class, CommitProjectBuilder.class,
+                CommitFacade.class, InputFileCacheSensor.class, InputFileCache.class, MarkDownUtils.class);
+        context.addExtensions(definitions());
     }
 }

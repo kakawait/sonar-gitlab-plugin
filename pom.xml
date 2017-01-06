@@ -45,7 +45,7 @@
         <sonar.pluginName>GitLab</sonar.pluginName>
         <sonar.pluginClass>com.synaptix.sonar.plugins.gitlab.GitLabPlugin</sonar.pluginClass>
 
-        <sonar.version>5.3</sonar.version>
+        <sonar.version>6.2</sonar.version>
         <java-gitlab-api.version>1.2.7</java-gitlab-api.version>
         <jsr305.version>3.0.1</jsr305.version>
     </properties>
