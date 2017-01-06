@@ -103,7 +103,7 @@ public class CommitIssuePostJob implements PostJob {
                     if (!commentsByLine.containsKey(line)) {
                         commentsByLine.put(line, new StringBuilder());
                     }
-                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity.name(), message, ruleKey))
+                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity, message, ruleKey))
                                   .append("\n");
                     reportedInline = true;
                 }
