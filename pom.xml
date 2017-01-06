@@ -3,88 +3,60 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
+    <groupId>com.kakawait</groupId>
+    <artifactId>sonar-gitlab-plugin</artifactId>
+    <version>1.9.0-SNAPSHOT</version>
+    <packaging>sonar-plugin</packaging>
+
+    <name>SonarQube :: GitLab Plugin</name>
+    <description>GitLab Plugin for Reporting</description>
+
+    <developers>
+        <developer>
+            <name>Thibaud Leprêtre</name>
+            <email>thibaud.lepretre@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/kakawait/sonar-gitlab-plugin</url>
+        <connection>scm:git:ssh://git@github.com:kakawait/sonar-gitlab-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:kakawait/sonar-gitlab-plugin.git</developerConnection>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/kakawait/sonar-gitlab-plugin/issues</url>
+    </issueManagement>
+
     <parent>
         <groupId>org.sonarsource.parent</groupId>
         <artifactId>parent</artifactId>
-        <version>28</version>
+        <version>37</version>
     </parent>
-    <groupId>com.synaptix</groupId>
-    <artifactId>sonar-gitlab-plugin</artifactId>
-    <version>1.8.2-SNAPSHOT</version>
-    <name>SonarQube :: GitLab Plugin</name>
-    <description>GitLab Plugin for Reporting</description>
-    <packaging>sonar-plugin</packaging>
-    <inceptionYear>2016</inceptionYear>
-    <organization>
-        <name>Talanlabs</name>
-        <url>http://www.talanlabs.com</url>
-    </organization>
-    <url>https://gitlab.talanlabs.com/gabriel-allaigre/sonar-gitlab-plugin</url>
+
     <properties>
-        <java-gitlab-api.version>1.4.0</java-gitlab-api.version>
-        <freemarker.version>2.3.23</freemarker.version>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
 
-        <license.mailto>gabriel.allaigre@talanlabs.com</license.mailto>
-        <license.owner>Talanlabs</license.owner>
-
-        <sonar.version>5.4</sonar.version>
+        <license.mailto>thibaud.lepretre@gmail.com</license.mailto>
+        <license.owner>Thibaud Leprêtre</license.owner>
         <sonar.pluginName>GitLab</sonar.pluginName>
         <sonar.pluginClass>com.synaptix.sonar.plugins.gitlab.GitLabPlugin</sonar.pluginClass>
+
+        <sonar.version>5.3</sonar.version>
+        <java-gitlab-api.version>1.2.7</java-gitlab-api.version>
+        <jsr305.version>3.0.1</jsr305.version>
     </properties>
-    <developers>
-        <developer>
-            <id>gabriel.allaigre@talanlabs.com</id>
-            <name>Gabriel Allaigre</name>
-            <email>gabriel.allaigre@talanlabs.com</email>
-        </developer>
-    </developers>
-    <scm>
-        <url>https://gitlab.talanlabs.com/gabriel-allaigre/sonar-gitlab-plugin</url>
-        <connection>scm:git:https://gitlab.talanlabs.com/gabriel-allaigre/sonar-gitlab-plugin.git</connection>
-    </scm>
-    <ciManagement>
-        <system>gitlab-ci</system>
-        <url>https://gitlab.talanlabs.com/gabriel-allaigre/sonar-gitlab-plugin/builds</url>
-    </ciManagement>
-    <issueManagement>
-        <system>gitlab</system>
-        <url>https://gitlab.talanlabs.com/gabriel-allaigre/sonar-gitlab-plugin/issues</url>
-    </issueManagement>
-    <repositories>
-        <repository>
-            <id>talanlabs-releases-repository</id>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <url>http://nexus.talanlabs.com/content/groups/public_release</url>
-        </repository>
-        <repository>
-            <id>talanlabs-snapshots-repository</id>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <url>http://nexus.talanlabs.com/content/groups/public_snapshots</url>
-        </repository>
-    </repositories>
+
     <dependencies>
+        <dependency>
+            <groupId>org.gitlab</groupId>
+            <artifactId>java-gitlab-api</artifactId>
+            <version>${java-gitlab-api.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.sonarsource.sonarqube</groupId>
             <artifactId>sonar-plugin-api</artifactId>
@@ -94,29 +66,9 @@
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
-            <version>2.0.3</version>
+            <version>${jsr305.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.gitlab/java-gitlab-api -->
-        <dependency>
-            <groupId>org.gitlab</groupId>
-            <artifactId>java-gitlab-api</artifactId>
-            <version>1.2.7</version>
-        </dependency>
-
-        <!--
-        <dependency>
-            <groupId>com.synaptix</groupId>
-            <artifactId>java-gitlab-api</artifactId>
-            <version>${java-gitlab-api.version}</version>
-        </dependency>
-        -->
-        <!--dependency>
-            <groupId>org.freemarker</groupId>
-            <artifactId>freemarker</artifactId>
-            <version>${freemarker.version}</version>
-        </dependency-->
 
         <!-- unit tests -->
         <dependency>
@@ -150,14 +102,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <distributionManagement>
-        <repository>
-            <id>talanlabs-releases-repository</id>
-            <url>http://nexus.talanlabs.com/content/repositories/releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>talanlabs-snapshots-repository</id>
-            <url>http://nexus.talanlabs.com/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
