@@ -26,7 +26,6 @@ import org.sonar.api.batch.postjob.PostJobContext;
 import org.sonar.api.batch.postjob.PostJobDescriptor;
 import org.sonar.api.batch.postjob.issue.PostJobIssue;
 import org.sonar.api.batch.rule.Severity;
-import org.sonar.api.issue.ProjectIssues;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,19 +39,18 @@ public class CommitIssuePostJob implements PostJob {
 
     private final GitLabPluginConfiguration gitLabPluginConfiguration;
     private final CommitFacade commitFacade;
-    private final ProjectIssues projectIssues;
     private final MarkDownUtils markDownUtils;
 
-    public CommitIssuePostJob(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade, ProjectIssues projectIssues, MarkDownUtils markDownUtils) {
+    public CommitIssuePostJob(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade,
+            MarkDownUtils markDownUtils) {
         this.gitLabPluginConfiguration = gitLabPluginConfiguration;
         this.commitFacade = commitFacade;
-        this.projectIssues = projectIssues;
         this.markDownUtils = markDownUtils;
     }
 
     @Override
     public void describe(@Nonnull PostJobDescriptor descriptor) {
-        descriptor.name("GitLab issue publisher").requireProperty(GitLabPlugin.GITLAB_COMMIT_SHA);
+        descriptor.name("GitLab plugin issue publisher").requireProperty(GitLabPlugin.GITLAB_COMMIT_SHA);
     }
 
     @Override
@@ -105,7 +103,8 @@ public class CommitIssuePostJob implements PostJob {
                     if (!commentsByLine.containsKey(line)) {
                         commentsByLine.put(line, new StringBuilder());
                     }
-                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity.name(), message, ruleKey)).append("\n");
+                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity.name(), message, ruleKey))
+                                  .append("\n");
                     reportedInline = true;
                 }
             }

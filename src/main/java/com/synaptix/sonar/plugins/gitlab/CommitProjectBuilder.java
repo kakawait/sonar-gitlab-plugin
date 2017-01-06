@@ -29,12 +29,10 @@ import org.sonar.api.config.Settings;
 public class CommitProjectBuilder extends ProjectBuilder {
 
     private final GitLabPluginConfiguration gitLabPluginConfiguration;
-    private final Settings settings;
     private final CommitFacade commitFacade;
 
-    public CommitProjectBuilder(GitLabPluginConfiguration gitLabPluginConfiguration,CommitFacade commitFacade, Settings settings) {
+    public CommitProjectBuilder(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade) {
         this.gitLabPluginConfiguration = gitLabPluginConfiguration;
-        this.settings = settings;
         this.commitFacade = commitFacade;
     }
 
@@ -46,6 +44,7 @@ public class CommitProjectBuilder extends ProjectBuilder {
 
         commitFacade.init(context.projectReactor().getRoot().getBaseDir());
 
-        commitFacade.createOrUpdateSonarQubeStatus(gitLabPluginConfiguration.getBuildInitState(), "SonarQube analysis in progress");
+        commitFacade.createOrUpdateSonarQubeStatus(gitLabPluginConfiguration.getBuildInitState(),
+                "SonarQube analysis in progress");
     }
 }

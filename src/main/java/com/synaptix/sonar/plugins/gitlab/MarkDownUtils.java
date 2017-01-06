@@ -34,69 +34,71 @@ import javax.annotation.Nullable;
 @ScannerSide
 public class MarkDownUtils {
 
-  private final String ruleUrlPrefix;
+    private final String ruleUrlPrefix;
 
-  public MarkDownUtils(Settings settings) {
-    // If server base URL was not configured in SQ server then is is better to take URL configured on batch side
-    String baseUrl = settings.hasKey(CoreProperties.SERVER_BASE_URL) ? settings.getString(CoreProperties.SERVER_BASE_URL) : settings.getString("sonar.host.url");
-    if (!baseUrl.endsWith("/")) {
-      baseUrl += "/";
+    public MarkDownUtils(Settings settings) {
+        // If server base URL was not configured in SQ server then is is better to take URL configured on batch side
+        String baseUrl = settings.hasKey(CoreProperties.SERVER_BASE_URL)
+                ? settings.getString(CoreProperties.SERVER_BASE_URL)
+                : settings.getString("sonar.host.url");
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
+        }
+        this.ruleUrlPrefix = baseUrl;
     }
-    this.ruleUrlPrefix = baseUrl;
-  }
 
-  public String inlineIssue(String severity, String message, String ruleKey) {
-    String ruleLink = getRuleLink(ruleKey);
-    StringBuilder sb = new StringBuilder();
-    sb.append(getEmojiForSeverity(severity))
-      .append(" ")
-      .append(message)
-      .append(" ")
-      .append(ruleLink);
-    return sb.toString();
-  }
-
-  public String globalIssue(String severity, String message, String ruleKey, @Nullable String url, String componentKey) {
-    String ruleLink = getRuleLink(ruleKey);
-    StringBuilder sb = new StringBuilder();
-    sb.append(getEmojiForSeverity(severity)).append(" ");
-    if (url != null) {
-      sb.append("[").append(message).append("]").append("(").append(url).append(")");
-    } else {
-      sb.append(message).append(" ").append("(").append(componentKey).append(")");
+    String inlineIssue(String severity, String message, String ruleKey) {
+        String ruleLink = getRuleLink(ruleKey);
+        StringBuilder sb = new StringBuilder();
+        sb.append(getEmojiForSeverity(severity))
+          .append(" ")
+          .append(message)
+          .append(" ")
+          .append(ruleLink);
+        return sb.toString();
     }
-    sb.append(" ").append(ruleLink);
-    return sb.toString();
-  }
 
-  String getRuleLink(String ruleKey) {
-    return "[:blue_book:](" + ruleUrlPrefix + "coding_rules#rule_key=" + encodeForUrl(ruleKey) + ")";
-  }
-
-  static String encodeForUrl(String url) {
-    try {
-      return URLEncoder.encode(url, "UTF-8");
-
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("Encoding not supported", e);
+    String globalIssue(String severity, String message, String ruleKey, @Nullable String url, String componentKey) {
+        String ruleLink = getRuleLink(ruleKey);
+        StringBuilder sb = new StringBuilder();
+        sb.append(getEmojiForSeverity(severity)).append(" ");
+        if (url != null) {
+            sb.append("[").append(message).append("]").append("(").append(url).append(")");
+        } else {
+            sb.append(message).append(" ").append("(").append(componentKey).append(")");
+        }
+        sb.append(" ").append(ruleLink);
+        return sb.toString();
     }
-  }
 
-  public static String getEmojiForSeverity(String severity) {
-    switch (severity) {
-      case Severity.BLOCKER:
-        return ":no_entry:";
-      case Severity.CRITICAL:
-        return ":no_entry_sign:";
-      case Severity.MAJOR:
-        return ":warning:";
-      case Severity.MINOR:
-        return ":arrow_down_small:";
-      case Severity.INFO:
-        return ":information_source:";
-      default:
-        return ":grey_question:";
+    private String getRuleLink(String ruleKey) {
+        return "[:blue_book:](" + ruleUrlPrefix + "coding_rules#rule_key=" + encodeForUrl(ruleKey) + ")";
     }
-  }
+
+    private static String encodeForUrl(String url) {
+        try {
+            return URLEncoder.encode(url, "UTF-8");
+
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("Encoding not supported", e);
+        }
+    }
+
+    static String getEmojiForSeverity(String severity) {
+        switch (severity) {
+            case Severity.BLOCKER:
+                return ":no_entry:";
+            case Severity.CRITICAL:
+                return ":no_entry_sign:";
+            case Severity.MAJOR:
+                return ":warning:";
+            case Severity.MINOR:
+                return ":arrow_down_small:";
+            case Severity.INFO:
+                return ":information_source:";
+            default:
+                return ":grey_question:";
+        }
+    }
 
 }

@@ -36,56 +36,56 @@ public class GitLabPluginConfiguration {
     }
 
     @CheckForNull
-    public String projectId() {
+    String projectId() {
         return settings.getString(GitLabPlugin.GITLAB_PROJECT_ID);
     }
 
     @CheckForNull
-    public String commitSHA() {
+    String commitSHA() {
         return settings.getString(GitLabPlugin.GITLAB_COMMIT_SHA);
     }
 
     @CheckForNull
-    public String refName() {
+    String refName() {
         return settings.getString(GitLabPlugin.GITLAB_REF_NAME);
     }
 
     @CheckForNull
-    public String userToken() {
+    String userToken() {
         return settings.getString(GitLabPlugin.GITLAB_USER_TOKEN);
     }
 
-    public boolean isEnabled() {
+    boolean isEnabled() {
         return settings.hasKey(GitLabPlugin.GITLAB_COMMIT_SHA);
     }
 
     @CheckForNull
-    public String url() {
+    String url() {
         return settings.getString(GitLabPlugin.GITLAB_URL);
     }
 
     @CheckForNull
-    public int maxGlobalIssues() {
+    int maxGlobalIssues() {
         return settings.getInt(GitLabPlugin.GITLAB_MAX_GLOBAL_ISSUES);
     }
 
     @CheckForNull
-    public boolean ignoreFileNotModified() {
+    boolean ignoreFileNotModified() {
         return settings.getBoolean(GitLabPlugin.GITLAB_IGNORE_FILE);
     }
 
     @CheckForNull
-    public boolean commentNoIssue() {
+    boolean commentNoIssue() {
         return settings.getBoolean(GitLabPlugin.GITLAB_COMMENT_NO_ISSUE);
     }
 
     @CheckForNull
-    public boolean ignoreSSL() {
+    boolean ignoreSSL() {
         return settings.getBoolean(GitLabPlugin.GITLAB_IGNORE_SSL);
     }
 
     @CheckForNull
-    public String getBuildInitState() {
+    String getBuildInitState() {
         return settings.getString(GitLabPlugin.GITLAB_BUILD_INIT_STATE);
     }
 }

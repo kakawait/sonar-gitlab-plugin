@@ -55,7 +55,7 @@ public class CommitFacade {
 
     private static final Logger logger = Loggers.get(CommitFacade.class);
 
-    static final String COMMIT_CONTEXT = "sonarqube";
+    private static final String COMMIT_CONTEXT = "sonarqube";
 
     private final GitLabPluginConfiguration config;
     private File gitBaseDir;
@@ -67,15 +67,18 @@ public class CommitFacade {
         this.config = config;
     }
 
-    public void init(File projectBaseDir) {
+    void init(File projectBaseDir) {
         if (findGitBaseDir(projectBaseDir) == null) {
-            throw new IllegalStateException(String.format("Unable to find Git root directory. Is (%s) part of a Git repository?", projectBaseDir));
+            throw new IllegalStateException(
+                    String.format("Unable to find Git root directory. Is (%s) part of a Git repository?",
+                            projectBaseDir));
         }
         gitLabAPI = GitlabAPI.connect(config.url(), config.userToken()).ignoreCertificateErrors(config.ignoreSSL());
         try {
             gitLabProject = getGitLabProject();
 
-            patchPositionMappingByFile = mapPatchPositionsToLines(gitLabAPI.getCommitDiffs(gitLabProject.getId(), config.commitSHA()));
+            patchPositionMappingByFile = mapPatchPositionsToLines(gitLabAPI.getCommitDiffs(gitLabProject.getId(),
+                    config.commitSHA()));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
@@ -102,8 +105,11 @@ public class CommitFacade {
         }
         List<GitlabProject> res = new ArrayList<>();
         for(GitlabProject project : projects) {
-            if (config.projectId().equals(project.getId().toString()) || config.projectId().equals(project.getPathWithNamespace()) || config.projectId().equals(project.getHttpUrl())
-                    || config.projectId().equals(project.getSshUrl()) || config.projectId().equals(project.getWebUrl()) || config.projectId().equals(project.getNameWithNamespace())) {
+            if (config.projectId().equals(project.getId().toString())
+                    || config.projectId().equals(project.getPathWithNamespace())
+                    || config.projectId().equals(project.getHttpUrl())
+                    || config.projectId().equals(project.getSshUrl()) || config.projectId().equals(project.getWebUrl())
+                    || config.projectId().equals(project.getNameWithNamespace())) {
                 logger.debug("found matching project with project id: {}", project.getId());
                 res.add(project);
             }
@@ -136,7 +142,9 @@ public class CommitFacade {
         for (String line : IOUtils.readLines(new StringReader(patch))) {
             if (line.startsWith("@")) {
                 // http://en.wikipedia.org/wiki/Diff_utility#Unified_format
-                Matcher matcher = Pattern.compile("@@\\p{Space}-[0-9]+(?:,[0-9]+)?\\p{Space}\\+([0-9]+)(?:,[0-9]+)?\\p{Space}@@.*").matcher(line);
+                Matcher matcher = Pattern
+                        .compile("@@\\p{Space}-[0-9]+(?:,[0-9]+)?\\p{Space}\\+([0-9]+)(?:,[0-9]+)?\\p{Space}@@.*")
+                        .matcher(line);
                 if (!matcher.matches()) {
                     throw new IllegalStateException("Unable to parse patch line " + line + "\nFull patch: \n" + patch);
                 }
@@ -154,32 +162,35 @@ public class CommitFacade {
         }
     }
 
-    public void createOrUpdateSonarQubeStatus(String status, String statusDescription) {
+    void createOrUpdateSonarQubeStatus(String status, String statusDescription) {
         logger.info("Call to commit status update with: status={}, desc={}", status, statusDescription);
         try {
             if (GitLabPlugin.BUILD_INIT_STATES.contains(status)) {
-                logger.info("Skipping commit status update since there are builds for this commit ({}) that will fail for consecutive update to this state ({}).", config.commitSHA(), status);
+                logger.info("Skipping commit status update since there are builds for this commit ({}) " +
+                        "that will fail for consecutive update to this state ({}).", config.commitSHA(), status);
             } else {
-                gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(), COMMIT_CONTEXT, null, statusDescription);
+                gitLabAPI.createCommitStatus(gitLabProject, config.commitSHA(), status, config.refName(),
+                        COMMIT_CONTEXT, null, statusDescription);
             }
         } catch (IOException e) {
-            String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, context=%s, ignore_ssl=%s, build_init_state=%s, description=%s]",
-                    status, gitLabProject.getId(), config.commitSHA(), config.refName(), COMMIT_CONTEXT, gitLabAPI.isIgnoreCertificateErrors(), config.getBuildInitState(), statusDescription
-            );
+            String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, " +
+                    "context=%s, ignore_ssl=%s, build_init_state=%s, description=%s]", status, gitLabProject.getId(),
+                    config.commitSHA(), config.refName(), COMMIT_CONTEXT, gitLabAPI.isIgnoreCertificateErrors(),
+                    config.getBuildInitState(), statusDescription);
             logger.error(msg);
             throw new IllegalStateException(msg, e);
         }
     }
 
-    public boolean hasFile(InputFile inputFile) {
+    boolean hasFile(InputFile inputFile) {
         return patchPositionMappingByFile.containsKey(getPath(inputFile));
     }
 
-    public boolean hasFileLine(InputFile inputFile, int line) {
+    boolean hasFileLine(InputFile inputFile, int line) {
         return hasFile(inputFile) && patchPositionMappingByFile.get(getPath(inputFile)).contains(line);
     }
 
-    public String getGitLabUrl(InputFile inputFile, Integer issueLine) {
+    String getGitLabUrl(InputFile inputFile, Integer issueLine) {
         if (inputFile != null) {
             String path = getPath(inputFile);
             String rtn = gitLabProject.getWebUrl() + "/blob/" + config.commitSHA() + "/" + path + (issueLine != null ? ("#L" + issueLine) : "");
@@ -189,13 +200,15 @@ public class CommitFacade {
         return null;
     }
 
-    public void createOrUpdateReviewComment(InputFile inputFile, Integer line, String body) {
-        String fullpath = getPath(inputFile);
-        //System.out.println("Review : "+fullpath+" line : "+line);
+    void createOrUpdateReviewComment(InputFile inputFile, Integer line, String body) {
+        String fullPath = getPath(inputFile);
+        //System.out.println("Review : "+fullPath+" line : "+line);
         try {
-            gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), body, fullpath, line.toString(), "new");
+            gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), body, fullPath, line.toString(),
+                    "new");
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to create or update review comment in file " + fullpath + " at line " + line, e);
+            throw new IllegalStateException("Unable to create or update review comment in file " + fullPath
+                    + " at line " + line, e);
         }
     }
 
@@ -203,7 +216,7 @@ public class CommitFacade {
         return new PathResolver().relativePath(gitBaseDir, inputPath.file());
     }
 
-    public void addGlobalComment(String comment) {
+    void addGlobalComment(String comment) {
         try {
             gitLabAPI.createCommitComment(gitLabProject.getId(),config.commitSHA(), comment, null, null, null);
         } catch (IOException e) {
@@ -213,6 +226,7 @@ public class CommitFacade {
 
     private boolean isCommitBuildInAnyEnqueueState(Serializable projectId, String sha) throws IOException {
         // this API is broken in gitlab
-        return gitLabAPI.getCommitBuilds(projectId, sha).stream().anyMatch(e -> GitLabPlugin.BUILD_INIT_STATES.contains(e.getStatus()));
+        return gitLabAPI.getCommitBuilds(projectId, sha).stream()
+                        .anyMatch(e -> GitLabPlugin.BUILD_INIT_STATES.contains(e.getStatus()));
     }
 }
