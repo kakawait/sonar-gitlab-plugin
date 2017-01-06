@@ -22,11 +22,15 @@ package com.synaptix.sonar.plugins.gitlab;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.config.Settings;
-import org.sonar.api.rule.Severity;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -34,71 +38,132 @@ import javax.annotation.Nullable;
 @ScannerSide
 public class MarkDownUtils {
 
-    private final String ruleUrlPrefix;
+    private static final String SONAR_HOST_URL_PROPERTY_KEY = "sonar.host.url";
 
+    private static final String INLINE_ISSUE_COMMENT_TEMPLATE = "%s %s %s";
+
+    private static final String GLOBAL_ISSUE_COMMENT_TEMPLATE = "%s %s (%s) %s";
+
+    private static final String GLOBAL_ISSUE_WITH_URL_COMMENT_TEMPLATE = "%s [%s](%s) %s";
+
+    private static final Map<Severity, String> SEVERITY_EMOJI_MAPPINGS = Collections.unmodifiableMap(
+            new HashMap<Severity, String>() {{
+                put(Severity.BLOCKER, ":no_entry:");
+                put(Severity.CRITICAL, ":no_entry_sign:");
+                put(Severity.MAJOR, ":warning:");
+                put(Severity.MINOR, ":arrow_down_small:");
+                put(Severity.INFO, ":information_source:");
+            }});
+
+    private final String baseUrl;
+
+    /**
+     * Sets up these utilities.
+     * <p>
+     * If {@value org.sonar.api.CoreProperties#SERVER_BASE_URL} is configured, it will be used over the sonar host URL.
+     *
+     * @param settings SonarQube settings in order to get SonarQube url.
+     *
+     * @throws IllegalArgumentException if missing SonarQube base url.
+     */
     public MarkDownUtils(Settings settings) {
-        // If server base URL was not configured in SQ server then is is better to take URL configured on batch side
         String baseUrl = settings.hasKey(CoreProperties.SERVER_BASE_URL)
                 ? settings.getString(CoreProperties.SERVER_BASE_URL)
-                : settings.getString("sonar.host.url");
+                : settings.getString(SONAR_HOST_URL_PROPERTY_KEY);
+        if (baseUrl == null) {
+            throw new IllegalArgumentException(String.format("A base URL must be provided with the setting %s or %s",
+                    CoreProperties.SERVER_BASE_URL,
+                    SONAR_HOST_URL_PROPERTY_KEY
+            ));
+        }
+
         if (!baseUrl.endsWith("/")) {
             baseUrl += "/";
         }
-        this.ruleUrlPrefix = baseUrl;
+        this.baseUrl = baseUrl;
     }
 
-    String inlineIssue(String severity, String message, String ruleKey) {
-        String ruleLink = getRuleLink(ruleKey);
-        StringBuilder sb = new StringBuilder();
-        sb.append(getEmojiForSeverity(severity))
-          .append(" ")
-          .append(message)
-          .append(" ")
-          .append(ruleLink);
-        return sb.toString();
+    /**
+     * Returns the markdown emoji text for a violation severity.
+     *
+     * @param severity issue severity to be mapped.
+     *
+     * @return An {@link String} representing a markdown <i>Emoji</i>.
+     */
+    static String getEmojiForSeverity(Severity severity) {
+        return SEVERITY_EMOJI_MAPPINGS.getOrDefault(severity, ":grey_question:");
     }
 
-    String globalIssue(String severity, String message, String ruleKey, @Nullable String url, String componentKey) {
+    /**
+     * Format a rule violation for display inline with other information.
+     *
+     * @param severity issue severity to be used to get icon.
+     * @param message message to be display.
+     * @param ruleKey reference to rule, will be transformed to link to SonarQube instance.
+     *
+     * @return inline comment that will be posted to GitLab commit.
+     *
+     * @throws IllegalArgumentException if one of the method parameter is null.
+     */
+    String inlineIssue(Severity severity, String message, String ruleKey) {
+        assertNotNull(severity, "severity must not be null");
+        assertNotNull(message, "message must not be null");
+        assertNotNull(ruleKey, "ruleKey must not be null");
+
         String ruleLink = getRuleLink(ruleKey);
-        StringBuilder sb = new StringBuilder();
-        sb.append(getEmojiForSeverity(severity)).append(" ");
-        if (url != null) {
-            sb.append("[").append(message).append("]").append("(").append(url).append(")");
+
+        return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message, ruleLink);
+    }
+
+    /**
+     * Build an entry for the global issues / rule violations comment.
+     *
+     * @param severity issue severity to be used to get icon.
+     * @param message message to be display.
+     * @param ruleKey reference to rule, will be transformed to link to SonarQube instance.
+     * @param url
+     * @param componentKey
+     *
+     * @return global comment that will be posted to GitLab commit.
+     *
+     * @throws IllegalArgumentException if one of the method parameter is null.
+     */
+    String globalIssue(Severity severity, String message, String ruleKey, @Nullable String url, String componentKey) {
+        assertNotNull(severity, "severity must not be null");
+        assertNotNull(message, "message must not be null");
+        assertNotNull(ruleKey, "ruleKey must not be null");
+        assertNotNull(componentKey, "componentKey must not be null");
+
+        String ruleLink = getRuleLink(ruleKey);
+        String emoji = getEmojiForSeverity(severity);
+
+        if (url == null) {
+            return String.format(GLOBAL_ISSUE_COMMENT_TEMPLATE, emoji, message, componentKey, ruleLink);
         } else {
-            sb.append(message).append(" ").append("(").append(componentKey).append(")");
+            return String.format(GLOBAL_ISSUE_WITH_URL_COMMENT_TEMPLATE, emoji, message, url, ruleLink);
         }
-        sb.append(" ").append(ruleLink);
-        return sb.toString();
-    }
-
-    private String getRuleLink(String ruleKey) {
-        return "[:blue_book:](" + ruleUrlPrefix + "coding_rules#rule_key=" + encodeForUrl(ruleKey) + ")";
     }
 
     private static String encodeForUrl(String url) {
         try {
-            return URLEncoder.encode(url, "UTF-8");
-
+            return URLEncoder.encode(url, StandardCharsets.UTF_8.displayName());
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("Encoding not supported", e);
         }
     }
 
-    static String getEmojiForSeverity(String severity) {
-        switch (severity) {
-            case Severity.BLOCKER:
-                return ":no_entry:";
-            case Severity.CRITICAL:
-                return ":no_entry_sign:";
-            case Severity.MAJOR:
-                return ":warning:";
-            case Severity.MINOR:
-                return ":arrow_down_small:";
-            case Severity.INFO:
-                return ":information_source:";
-            default:
-                return ":grey_question:";
+    private String getRuleLink(String ruleKey) {
+        assertNotNull(ruleKey, "ruleKey must not be null");
+
+        return "[:blue_book:](" + baseUrl + "coding_rules#rule_key=" + encodeForUrl(ruleKey) + ")";
+    }
+
+    private void assertNotNull(Object value, String errorMessage) {
+        if (value == null) {
+            throw new IllegalArgumentException(errorMessage);
         }
     }
+
+
 
 }

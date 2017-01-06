@@ -144,8 +144,12 @@ class GlobalReport {
     private void printNewIssuesForMarkdown(StringBuilder sb, String severity) {
         int issueCount = newIssues(severity);
         if (issueCount > 0) {
-            sb.append("* ").append(MarkDownUtils.getEmojiForSeverity(severity)).append(" ").append(issueCount)
-              .append(" ").append(severity.toLowerCase()).append("\n");
+            sb.append("* ")
+              .append(MarkDownUtils.getEmojiForSeverity(org.sonar.api.batch.rule.Severity.valueOf(severity)))
+              .append(" ")
+              .append(issueCount)
+              .append(" ")
+              .append(severity.toLowerCase()).append("\n");
         }
     }
 
@@ -160,7 +164,7 @@ class GlobalReport {
                 notReportedOnDiffMap.put(issue.severity().name(), notReportedOnDiffs);
             }
 
-            String comment = markDownUtils.globalIssue(issue.severity().name(), issue.message(),
+            String comment = markDownUtils.globalIssue(issue.severity(), issue.message(),
                     issue.ruleKey().toString(), gitLabUrl, issue.componentKey());
             notReportedOnDiffs
                     .add(new StringBuilder().append("* ").append(comment).toString());
@@ -168,6 +172,7 @@ class GlobalReport {
     }
 
     boolean hasNewIssue() {
-        return newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR) + newIssues(Severity.MINOR) + newIssues(Severity.INFO) > 0;
+        return newIssues(Severity.BLOCKER) + newIssues(Severity.CRITICAL) + newIssues(Severity.MAJOR)
+                + newIssues(Severity.MINOR) + newIssues(Severity.INFO) > 0;
     }
 }

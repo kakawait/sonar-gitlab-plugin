@@ -193,7 +193,8 @@ public class CommitFacade {
     String getGitLabUrl(InputFile inputFile, Integer issueLine) {
         if (inputFile != null) {
             String path = getPath(inputFile);
-            String rtn = gitLabProject.getWebUrl() + "/blob/" + config.commitSHA() + "/" + path + (issueLine != null ? ("#L" + issueLine) : "");
+            String rtn = gitLabProject.getWebUrl() + "/blob/" + config.commitSHA() + "/" + path
+                    + (issueLine != null ? ("#L" + issueLine) : "");
             logger.info("Gitlab URL: {}", rtn);
             return rtn;
         }
