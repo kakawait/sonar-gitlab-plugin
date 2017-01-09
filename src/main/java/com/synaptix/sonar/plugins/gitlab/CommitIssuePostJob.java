@@ -25,10 +25,10 @@ import org.sonar.api.batch.postjob.PostJob;
 import org.sonar.api.batch.postjob.PostJobContext;
 import org.sonar.api.batch.postjob.PostJobDescriptor;
 import org.sonar.api.batch.postjob.issue.PostJobIssue;
-import org.sonar.api.batch.rule.Severity;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nonnull;
 
@@ -37,14 +37,16 @@ import javax.annotation.Nonnull;
  */
 public class CommitIssuePostJob implements PostJob {
 
-    private final GitLabPluginConfiguration gitLabPluginConfiguration;
-    private final CommitFacade commitFacade;
+    private static final Logger logger = Loggers.get(CommitIssuePostJob.class);
+
+    private final GitLabPluginConfiguration configuration;
+    private final GitLabApiFacade gitLabApiFacade;
     private final MarkDownUtils markDownUtils;
 
-    public CommitIssuePostJob(GitLabPluginConfiguration gitLabPluginConfiguration, CommitFacade commitFacade,
+    public CommitIssuePostJob(GitLabPluginConfiguration configuration, GitLabApiFacade gitLabApiFacade,
             MarkDownUtils markDownUtils) {
-        this.gitLabPluginConfiguration = gitLabPluginConfiguration;
-        this.commitFacade = commitFacade;
+        this.configuration = configuration;
+        this.gitLabApiFacade = gitLabApiFacade;
         this.markDownUtils = markDownUtils;
     }
 
@@ -55,71 +57,44 @@ public class CommitIssuePostJob implements PostJob {
 
     @Override
     public void execute(@Nonnull PostJobContext context) {
-        GlobalReport report = new GlobalReport(gitLabPluginConfiguration, markDownUtils);
+        GlobalReport report = new GlobalReport(configuration, markDownUtils);
 
-        Map<InputFile, Map<Integer, StringBuilder>> commentsToBeAddedByLine = processIssues(context, report);
-
-        updateReviewComments(commentsToBeAddedByLine);
-
-        if (report.hasNewIssue() || gitLabPluginConfiguration.commentNoIssue()) {
-            commitFacade.addGlobalComment(report.formatForMarkdown());
-        }
-
-        commitFacade.createOrUpdateSonarQubeStatus(report.getStatus(), report.getStatusDescription());
-    }
-
-    @Override
-    public String toString() {
-        return "GitLab Commit Issue Publisher";
-    }
-
-    private Map<InputFile, Map<Integer, StringBuilder>> processIssues(PostJobContext context, GlobalReport report) {
-        Map<InputFile, Map<Integer, StringBuilder>> commentToBeAddedByFileAndByLine = new HashMap<>();
-        for (PostJobIssue issue : context.issues()) {
-            Severity severity = issue.severity();
-            boolean isNew = issue.isNew();
-            if (!isNew) {
-                continue;
-            }
-            Integer issueLine = issue.line();
-            InputComponent component = issue.inputComponent();
-            if (component == null || !component.isFile() || !(component instanceof InputFile)) {
-                continue;
-            }
-            InputFile inputFile = (InputFile) component;
-            if (gitLabPluginConfiguration.ignoreFileNotModified() && !commitFacade.hasFile(inputFile)) {
-                continue;
-            }
-            boolean reportedInline = false;
-            if (issueLine != null) {
-                int line = issueLine;
-                if (commitFacade.hasFileLine(inputFile, line)) {
-                    String message = issue.message();
-                    String ruleKey = issue.ruleKey().toString();
-                    if (!commentToBeAddedByFileAndByLine.containsKey(inputFile)) {
-                        commentToBeAddedByFileAndByLine.put(inputFile, new HashMap<>());
+        StreamSupport
+                .stream(context.issues().spliterator(), false)
+                .filter(PostJobIssue::isNew)
+                .filter(i -> {
+                    InputComponent inputComponent = i.inputComponent();
+                    return inputComponent != null
+                            && inputComponent.isFile()
+                            && gitLabApiFacade.hasFile((InputFile) inputComponent);
+                })
+                .forEach(i -> {
+                    InputFile inputFile = (InputFile) i.inputComponent();
+                    boolean hasFileLine = gitLabApiFacade.hasFileLine(inputFile, i.line());
+                    if (hasFileLine) {
+                        createInlineComment(inputFile, i);
                     }
-                    Map<Integer, StringBuilder> commentsByLine = commentToBeAddedByFileAndByLine.get(inputFile);
-                    if (!commentsByLine.containsKey(line)) {
-                        commentsByLine.put(line, new StringBuilder());
-                    }
-                    commentsByLine.get(line).append(markDownUtils.inlineIssue(severity, message, ruleKey))
-                                  .append("\n");
-                    reportedInline = true;
-                }
-            }
-            report.process(issue, commitFacade.getGitLabUrl(inputFile, issueLine), reportedInline);
+                    report.update(i, gitLabApiFacade.getGitLabUrl(configuration.commitSHA(), inputFile, i.line()), hasFileLine);
+                });
 
+        if (report.hasNewIssues() || configuration.commentNoIssue()) {
+            gitLabApiFacade.createGlobalComment(report.toMarkdown());
         }
-        return commentToBeAddedByFileAndByLine;
+
+        gitLabApiFacade.createCommitStatus(report.getStatus(), report.getStatusDescription());
     }
 
-    private void updateReviewComments(Map<InputFile, Map<Integer, StringBuilder>> commentsToBeAddedByLine) {
-        for (Map.Entry<InputFile, Map<Integer, StringBuilder>> entry : commentsToBeAddedByLine.entrySet()) {
-            for (Map.Entry<Integer, StringBuilder> entryPerLine : entry.getValue().entrySet()) {
-                String body = entryPerLine.getValue().toString();
-                commitFacade.createOrUpdateReviewComment(entry.getKey(), entryPerLine.getKey(), body);
-            }
+    private void createInlineComment(InputFile inputFile, PostJobIssue issue) {
+        logger.debug("Create inline comment for rule key {} on file {} with revision {}", issue.ruleKey(), inputFile,
+                configuration.commitSHA());
+        String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString());
+
+        boolean exists = gitLabApiFacade.getCommitCommentsForFile(configuration.commitSHA(), inputFile)
+                .stream()
+                .anyMatch(c -> c.getLine().equals(Integer.toString(issue.line())) && c.getNote().equals(body));
+        if (!exists) {
+            gitLabApiFacade.createOrUpdateReviewComment(inputFile, issue.line(), body);
         }
     }
+
 }
