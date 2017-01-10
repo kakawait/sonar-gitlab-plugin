@@ -154,7 +154,7 @@ public class GitLabPlugin implements Plugin {
     @Override
     public void define(@Nonnull Context context) {
         context.addExtensions(CommitIssuePostJob.class, GitLabPluginConfiguration.class, CommitProjectBuilder.class,
-                CommitFacade.class, MarkDownUtils.class);
+                GitLabApiFacade.class, MarkDownUtils.class);
         context.addExtensions(definitions());
     }
 }
