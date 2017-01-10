@@ -36,14 +36,18 @@ public class GitLabPlugin implements Plugin {
     static final String GITLAB_MAX_GLOBAL_ISSUES = "sonar.gitlab.max_global_issues";
     static final String GITLAB_USER_TOKEN = "sonar.gitlab.user_token";
     static final String GITLAB_PROJECT_ID = "sonar.gitlab.project_id";
-    static final String GITLAB_COMMIT_SHA = "sonar.gitlab.commit_sha";
+    static final String GITLAB_COMMIT_HASHES = "sonar.gitlab.commit_hashes";
     static final String GITLAB_REF_NAME = "sonar.gitlab.ref_name";
-    static final String GITLAB_IGNORE_FILE = "sonar.gitlab.ignore_file";
-    static final String GITLAB_COMMENT_NO_ISSUE = "sonar.gitlab.comment_no_issue";
+    static final String GITLAB_GLOBAL_COMMENT_NO_ISSUE = "sonar.gitlab.comment_no_issue";
     static final String GITLAB_IGNORE_SSL = "sonar.gitlab.ignore_ssl";
     static final String GITLAB_BUILD_INIT_STATE = "sonar.gitlab.build_init_state";
+    static final String GITLAB_DISABLE_GLOBAL_COMMENT = "sonar.gitlab.disable_global_comment";
+    static final String GITLAB_STATUS_NOTIFICATION_MODE = "sonar.gitlab.failure_notification_mode";
 
     static final List<String> BUILD_INIT_STATES = Collections.unmodifiableList(Arrays.asList("pending", "running"));
+    private static final List<String> STATUS_NOTIFICATIONS_MODE = Collections.unmodifiableList(
+            Arrays.asList("commit-status", "exit-code")
+    );
 
     private static final String CATEGORY = "gitlab";
     private static final String INSTANCE_SUBCATEGORY = "instance";
@@ -90,9 +94,9 @@ public class GitLabPlugin implements Plugin {
                         .index(4)
                         .build(),
                 PropertyDefinition
-                        .builder(GITLAB_COMMIT_SHA)
-                        .name("Commit SHA")
-                        .description("The commit revision for which project is built.")
+                        .builder(GITLAB_COMMIT_HASHES)
+                        .name("Commit hashes")
+                        .description("The commit revisions that will be used by plugin to find issue on files.")
                         .category(CATEGORY)
                         .subCategory(REPORTING_SUBCATEGORY)
                         .hidden()
@@ -100,32 +104,22 @@ public class GitLabPlugin implements Plugin {
                         .build(),
                 PropertyDefinition
                         .builder(GITLAB_REF_NAME)
-                        .name("Ref name")
-                        .description("The commit revision for which project is built.")
+                        .name("Commit reference")
+                        .description("The commit reference for which project is built.")
                         .category(CATEGORY)
                         .subCategory(REPORTING_SUBCATEGORY)
                         .hidden()
                         .index(6)
                         .build(),
                 PropertyDefinition
-                        .builder(GITLAB_IGNORE_FILE)
-                        .name("Ignore unrelated files")
-                        .description("Ignore issues on files not modified by the commit.")
+                        .builder(GITLAB_GLOBAL_COMMENT_NO_ISSUE)
+                        .name("Global comment even when there is no new issues")
+                        .description("Add a global comment even when there is no new issue.")
                         .category(CATEGORY)
                         .subCategory(REPORTING_SUBCATEGORY)
                         .type(PropertyType.BOOLEAN)
                         .defaultValue(String.valueOf(false))
                         .index(7)
-                        .build(),
-                PropertyDefinition
-                        .builder(GITLAB_COMMENT_NO_ISSUE)
-                        .name("Comment if no new issues")
-                        .description("Add a comment even when there is no new issue.")
-                        .category(CATEGORY)
-                        .subCategory(REPORTING_SUBCATEGORY)
-                        .type(PropertyType.BOOLEAN)
-                        .defaultValue(String.valueOf(false))
-                        .index(8)
                         .build(),
                 PropertyDefinition
                         .builder(GITLAB_IGNORE_SSL)
@@ -135,7 +129,7 @@ public class GitLabPlugin implements Plugin {
                         .subCategory(INSTANCE_SUBCATEGORY)
                         .type(PropertyType.BOOLEAN)
                         .defaultValue(String.valueOf(false))
-                        .index(9)
+                        .index(8)
                         .build(),
                 PropertyDefinition
                         .builder(GITLAB_BUILD_INIT_STATE)
@@ -143,10 +137,30 @@ public class GitLabPlugin implements Plugin {
                         .description("State that should be the first when build commit status update is called.")
                         .category(CATEGORY)
                         .subCategory(REPORTING_SUBCATEGORY)
-                        .index(10)
+                        .index(9)
                         .type(PropertyType.SINGLE_SELECT_LIST)
                         .options(BUILD_INIT_STATES)
                         .defaultValue("running")
+                        .build(),
+                PropertyDefinition
+                        .builder(GITLAB_DISABLE_GLOBAL_COMMENT)
+                        .name("Disable global comment")
+                        .description("Disable global comment, report only inline.")
+                        .category(CATEGORY)
+                        .subCategory(REPORTING_SUBCATEGORY)
+                        .index(10)
+                        .defaultValue(String.valueOf(false))
+                        .build(),
+                PropertyDefinition
+                        .builder(GITLAB_STATUS_NOTIFICATION_MODE)
+                        .name("Status notification mode")
+                        .description("Status notification mode: commit-status or exit-code")
+                        .category(CATEGORY)
+                        .subCategory(REPORTING_SUBCATEGORY)
+                        .type(PropertyType.SINGLE_SELECT_LIST)
+                        .options(STATUS_NOTIFICATIONS_MODE)
+                        .index(11)
+                        .defaultValue("commit-status")
                         .build()
         );
     }
