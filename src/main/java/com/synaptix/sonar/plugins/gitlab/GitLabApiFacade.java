@@ -203,6 +203,12 @@ public class GitLabApiFacade {
         if (configuration.projectId() == null) {
             throw new IllegalStateException("Missing required attribute: " + GitLabPlugin.GITLAB_PROJECT_ID);
         }
+
+        GitlabProject project = gitLabApi.getProject(configuration.projectId());
+        if (project != null) {
+            return project;
+        }
+
         Set<GitlabProject> projects = Optional
                 .ofNullable(gitLabApi.getProjects())
                 .orElseThrow(() -> new IllegalStateException("Unable to find projects within: " + configuration.url()))
