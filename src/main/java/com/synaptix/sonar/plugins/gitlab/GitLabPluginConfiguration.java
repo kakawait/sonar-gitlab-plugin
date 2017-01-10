@@ -23,6 +23,12 @@ import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.config.Settings;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import javax.annotation.CheckForNull;
 
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
@@ -35,28 +41,28 @@ public class GitLabPluginConfiguration {
         this.settings = settings;
     }
 
+    boolean isEnabled() {
+        return settings.hasKey(GitLabPlugin.GITLAB_COMMIT_HASHES);
+    }
+
     @CheckForNull
     String projectId() {
         return settings.getString(GitLabPlugin.GITLAB_PROJECT_ID);
     }
 
     @CheckForNull
-    String commitSHA() {
-        return settings.getString(GitLabPlugin.GITLAB_COMMIT_SHA);
+    List<String> commitHashes() {
+        return Arrays.asList(settings.getStringArray(GitLabPlugin.GITLAB_COMMIT_HASHES));
     }
 
     @CheckForNull
-    String refName() {
+    String referenceName() {
         return settings.getString(GitLabPlugin.GITLAB_REF_NAME);
     }
 
     @CheckForNull
     String userToken() {
         return settings.getString(GitLabPlugin.GITLAB_USER_TOKEN);
-    }
-
-    boolean isEnabled() {
-        return settings.hasKey(GitLabPlugin.GITLAB_COMMIT_SHA);
     }
 
     @CheckForNull
@@ -70,13 +76,8 @@ public class GitLabPluginConfiguration {
     }
 
     @CheckForNull
-    boolean ignoreFileNotModified() {
-        return settings.getBoolean(GitLabPlugin.GITLAB_IGNORE_FILE);
-    }
-
-    @CheckForNull
     boolean commentNoIssue() {
-        return settings.getBoolean(GitLabPlugin.GITLAB_COMMENT_NO_ISSUE);
+        return settings.getBoolean(GitLabPlugin.GITLAB_GLOBAL_COMMENT_NO_ISSUE);
     }
 
     @CheckForNull
@@ -87,5 +88,15 @@ public class GitLabPluginConfiguration {
     @CheckForNull
     String getBuildInitState() {
         return settings.getString(GitLabPlugin.GITLAB_BUILD_INIT_STATE);
+    }
+
+    @CheckForNull
+    boolean disableGlobalComment() {
+        return settings.getBoolean(GitLabPlugin.GITLAB_DISABLE_GLOBAL_COMMENT);
+    }
+
+    @CheckForNull
+    String statusNotificationMode() {
+        return settings.getString(GitLabPlugin.GITLAB_STATUS_NOTIFICATION_MODE);
     }
 }

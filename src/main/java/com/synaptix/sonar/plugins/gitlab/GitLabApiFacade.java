@@ -71,7 +71,7 @@ public class GitLabApiFacade {
 
     private Map<String, List<CommitComment>> commitCommentPerRevision;
 
-    private Map<String, Set<Integer>> patchPositionByFile;
+    private Map<String, Map<String, Set<Integer>>> patchPositionByFile;
 
     private File gitBaseDir;
 
@@ -98,29 +98,28 @@ public class GitLabApiFacade {
                              .ignoreCertificateErrors(configuration.ignoreSSL());
         try {
             gitLabProject = getGitLabProject();
-            commitCommentPerRevision = getCommitCommentsPerRevision(Collections.singletonList(configuration.commitSHA()));
-            patchPositionByFile = getPatchPositionsToLineMapping_LEGACY();
+            commitCommentPerRevision = getCommitCommentsPerRevision(configuration.commitHashes());
+            patchPositionByFile = getPatchPositionsToLineMapping(configuration.commitHashes());
         } catch (IOException e) {
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
     }
 
-    void createCommitStatus(String status, String statusDescription) {
+    void createCommitStatus(String revision, String status, String statusDescription) {
         logger.info("Call to commit status update with: status={}, desc={}", status, statusDescription);
         try {
             if (GitLabPlugin.BUILD_INIT_STATES.contains(status)) {
                 logger.info("Skipping commit status update since there are builds for this commit ({}) " +
-                        "that will fail for consecutive update to this state ({}).", configuration.commitSHA(), status);
+                        "that will fail for consecutive update to this state ({}).", configuration.commitHashes(), status);
             } else {
-                gitLabApi.createCommitStatus(gitLabProject, configuration.commitSHA(), status, configuration.refName(),
+                gitLabApi.createCommitStatus(gitLabProject, revision, status, configuration.referenceName(),
                         COMMIT_CONTEXT, null, statusDescription);
             }
         } catch (IOException e) {
             String msg = String.format("Unable to update commit status. [status=%s, project_id=%s, sha=%s, ref=%s, " +
                     "context=%s, ignore_ssl=%s, build_init_state=%s, description=%s]", status, gitLabProject.getId(),
-                    configuration.commitSHA(), configuration.refName(), COMMIT_CONTEXT,
+                    revision, configuration.referenceName(), COMMIT_CONTEXT,
                     gitLabApi.isIgnoreCertificateErrors(), configuration.getBuildInitState(), statusDescription);
-            logger.error(msg);
             throw new IllegalStateException(msg, e);
         }
     }
@@ -142,11 +141,17 @@ public class GitLabApiFacade {
     }
 
     boolean hasFile(InputFile inputFile) {
-        return patchPositionByFile.containsKey(getPath(inputFile));
+        return patchPositionByFile.values().stream().anyMatch(e -> e.containsKey(getPath(inputFile)));
     }
 
-    boolean hasFileLine(InputFile inputFile, int line) {
-        return hasFile(inputFile) && patchPositionByFile.get(getPath(inputFile)).contains(line);
+    Optional<String> getRevisionForLine(InputFile inputFile, int line) {
+        return patchPositionByFile
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue().entrySet().stream()
+                              .anyMatch(v -> v.getKey().equals(getPath(inputFile)) && v.getValue().contains(line)))
+                .map(Map.Entry::getKey)
+                .findFirst();
     }
 
     String getGitLabUrl(String revision, InputFile inputFile, Integer line) {
@@ -162,16 +167,17 @@ public class GitLabApiFacade {
 
     void createGlobalComment(String comment) {
         try {
-            gitLabApi.createCommitComment(gitLabProject.getId(), configuration.commitSHA(), comment, null, null, null);
+            String revision = configuration.commitHashes().get(0);
+            gitLabApi.createCommitComment(gitLabProject.getId(), revision, comment, null, null, null);
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Unable to comment the commit (%s)", comment) , e);
         }
     }
 
-    void createOrUpdateReviewComment(InputFile inputFile, Integer line, String body) {
+    void createInlineComment(String revision, InputFile inputFile, Integer line, String body) {
         String path = getPath(inputFile);
         try {
-            gitLabApi.createCommitComment(gitLabProject.getId(), configuration.commitSHA(), body, path, line.toString(),
+            gitLabApi.createCommitComment(gitLabProject.getId(), revision, body, path, line.toString(),
                     "new");
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create or update review comment in file " + path
@@ -221,10 +227,6 @@ public class GitLabApiFacade {
                 || configuration.projectId().equals(project.getNameWithNamespace());
     }
 
-    private Map<String, Set<Integer>> getPatchPositionsToLineMapping_LEGACY() throws IOException {
-        return (Map<String, Set<Integer>>) getPatchPositionsToLineMapping().values().toArray()[0];
-    }
-
     /**
      * GitLab expect review comments to be added on "patch lines" (aka position) but not on file lines.
      * So we have to iterate over each patch and compute corresponding file line in order to later map issues
@@ -234,16 +236,14 @@ public class GitLabApiFacade {
      *
      * @throws IOException If any issue when fetching GitLab API.
      */
-    private Map<String, Map<String, Set<Integer>>> getPatchPositionsToLineMapping() throws IOException {
+    private Map<String, Map<String, Set<Integer>>> getPatchPositionsToLineMapping(List<String> revisions) throws IOException {
         Map<String, Map<String, Set<Integer>>> result = new HashMap<>();
 
-        List<String> revisions = Collections.singletonList(configuration.commitSHA());
-
         for (String revision : revisions) {
-            result.put(revision, gitLabApi
-                    .getCommitDiffs(gitLabProject.getId(), revision)
-                    .stream()
-                    .collect(toMap(GitlabCommitDiff::getNewPath, d -> getPositionsFromPatch(d.getDiff()))));
+            result.put(revision,
+                    gitLabApi.getCommitDiffs(gitLabProject.getId(), revision)
+                             .stream()
+                             .collect(toMap(GitlabCommitDiff::getNewPath, d -> getPositionsFromPatch(d.getDiff()))));
         }
 
         return result;

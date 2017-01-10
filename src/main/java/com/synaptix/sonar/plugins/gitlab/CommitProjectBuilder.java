@@ -30,20 +30,20 @@ import org.sonar.api.utils.MessageException;
  */
 public class CommitProjectBuilder extends ProjectBuilder {
 
-    private final GitLabPluginConfiguration gitLabPluginConfiguration;
+    private final GitLabPluginConfiguration configuration;
     private final GitLabApiFacade gitLabApiFacade;
     private final AnalysisMode mode;
 
-    public CommitProjectBuilder(GitLabPluginConfiguration gitLabPluginConfiguration, GitLabApiFacade gitLabApiFacade,
+    public CommitProjectBuilder(GitLabPluginConfiguration configuration, GitLabApiFacade gitLabApiFacade,
             AnalysisMode mode) {
-        this.gitLabPluginConfiguration = gitLabPluginConfiguration;
+        this.configuration = configuration;
         this.gitLabApiFacade = gitLabApiFacade;
         this.mode = mode;
     }
 
     @Override
     public void build(Context context) {
-        if (!gitLabPluginConfiguration.isEnabled()) {
+        if (!configuration.isEnabled()) {
             return;
         }
         if (!mode.isIssues()) {
@@ -52,7 +52,9 @@ public class CommitProjectBuilder extends ProjectBuilder {
         }
 
         gitLabApiFacade.init(context.projectReactor().getRoot().getBaseDir());
-        gitLabApiFacade.createCommitStatus(gitLabPluginConfiguration.getBuildInitState(),
-                "SonarQube analysis in progress");
+        if (configuration.statusNotificationMode().equals("commit-status")) {
+            gitLabApiFacade.createCommitStatus(configuration.commitHashes().get(0), configuration.getBuildInitState(),
+                    "SonarQube analysis in progress");
+        }
     }
 }

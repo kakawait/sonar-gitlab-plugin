@@ -25,9 +25,11 @@ import org.sonar.api.batch.postjob.PostJob;
 import org.sonar.api.batch.postjob.PostJobContext;
 import org.sonar.api.batch.postjob.PostJobDescriptor;
 import org.sonar.api.batch.postjob.issue.PostJobIssue;
+import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import javax.annotation.Nonnull;
@@ -52,7 +54,7 @@ public class CommitIssuePostJob implements PostJob {
 
     @Override
     public void describe(@Nonnull PostJobDescriptor descriptor) {
-        descriptor.name("GitLab plugin issue publisher").requireProperty(GitLabPlugin.GITLAB_COMMIT_SHA);
+        descriptor.name("GitLab plugin issue publisher").requireProperty(GitLabPlugin.GITLAB_COMMIT_HASHES);
     }
 
     @Override
@@ -70,30 +72,41 @@ public class CommitIssuePostJob implements PostJob {
                 })
                 .forEach(i -> {
                     InputFile inputFile = (InputFile) i.inputComponent();
-                    boolean hasFileLine = gitLabApiFacade.hasFileLine(inputFile, i.line());
-                    if (hasFileLine) {
-                        createInlineComment(inputFile, i);
-                    }
-                    report.update(i, gitLabApiFacade.getGitLabUrl(configuration.commitSHA(), inputFile, i.line()), hasFileLine);
+                    Optional<String> revision = gitLabApiFacade.getRevisionForLine(inputFile, i.line());
+                    revision.ifPresent(r -> createInlineComment(r, inputFile, i));
+                    report.update(i, gitLabApiFacade.getGitLabUrl(configuration.commitHashes().get(0), inputFile,
+                            i.line()), revision.isPresent());
                 });
 
-        if (report.hasNewIssues() || configuration.commentNoIssue()) {
+        if (!configuration.disableGlobalComment() && report.hasNewIssues() || configuration.commentNoIssue()) {
             gitLabApiFacade.createGlobalComment(report.toMarkdown());
         }
 
-        gitLabApiFacade.createCommitStatus(report.getStatus(), report.getStatusDescription());
+        String status = report.getStatus();
+        String statusDescription = report.getStatusDescription();
+        if (configuration.statusNotificationMode().equals("status-code")) {
+            String message = String.format("Call to commit status update with: status=%s, desc=%s",
+                    status, statusDescription);
+            if (status.equals("failed")) {
+                throw MessageException.of(message);
+            }
+            logger.info(message);
+        } else if (configuration.statusNotificationMode().equals("commit-status")) {
+            gitLabApiFacade.createCommitStatus(configuration.commitHashes().get(0), status,
+                    report.getStatusDescription());
+        }
     }
 
-    private void createInlineComment(InputFile inputFile, PostJobIssue issue) {
+    private void createInlineComment(String revision, InputFile inputFile, PostJobIssue issue) {
         logger.debug("Create inline comment for rule key {} on file {} with revision {}", issue.ruleKey(), inputFile,
-                configuration.commitSHA());
+                configuration.commitHashes());
         String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString());
 
-        boolean exists = gitLabApiFacade.getCommitCommentsForFile(configuration.commitSHA(), inputFile)
+        boolean exists = gitLabApiFacade.getCommitCommentsForFile(revision, inputFile)
                 .stream()
                 .anyMatch(c -> c.getLine().equals(Integer.toString(issue.line())) && c.getNote().equals(body));
         if (!exists) {
-            gitLabApiFacade.createOrUpdateReviewComment(inputFile, issue.line(), body);
+            gitLabApiFacade.createInlineComment(revision, inputFile, issue.line(), body);
         }
     }
 
