@@ -100,6 +100,7 @@ public class GitLabApiFacade {
             gitLabProject = getGitLabProject();
             commitCommentPerRevision = getCommitCommentsPerRevision(configuration.commitHashes());
             patchPositionByFile = getPatchPositionsToLineMapping(configuration.commitHashes());
+            logger.debug("patch position by file and hashes {}", patchPositionByFile);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
@@ -145,6 +146,7 @@ public class GitLabApiFacade {
     }
 
     Optional<String> getRevisionForLine(InputFile inputFile, int line) {
+        logger.debug("find revision for given file {} on line {}", inputFile, line);
         return patchPositionByFile
                 .entrySet()
                 .stream()

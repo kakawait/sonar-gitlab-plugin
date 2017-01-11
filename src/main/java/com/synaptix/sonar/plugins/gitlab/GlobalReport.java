@@ -110,7 +110,7 @@ class GlobalReport {
                     .map(e -> String.format("%d %s", e.getValue(), e.getKey()))
                     .collect(Collectors.joining(" and "));
 
-            String template = "{0} {0,choice,1#issue,|1<issues}, with %s";
+            String template = "{0} {0,choice,1#issue|1<issues}, with {1}";
             report = MessageFormat.format(template, numberOfIssues,
                     reportForSeverities.length() == 0 ? "no critical nor blocker issues" : reportForSeverities);
         }
