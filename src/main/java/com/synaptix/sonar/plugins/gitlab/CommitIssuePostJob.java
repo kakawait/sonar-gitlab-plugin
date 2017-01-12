@@ -99,7 +99,7 @@ public class CommitIssuePostJob implements PostJob {
 
     private void createInlineComment(String revision, InputFile inputFile, PostJobIssue issue) {
         logger.debug("Create inline comment for rule key {} on file {} with revision {}", issue.ruleKey(), inputFile,
-                configuration.commitHashes());
+                revision);
         String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString());
 
         boolean exists = gitLabApiFacade.getCommitCommentsForFile(revision, inputFile)
