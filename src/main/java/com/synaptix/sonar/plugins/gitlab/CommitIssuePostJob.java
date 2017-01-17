@@ -74,6 +74,10 @@ public class CommitIssuePostJob implements PostJob {
                     InputFile inputFile = (InputFile) i.inputComponent();
                     Optional<String> revision = gitLabApiFacade.getRevisionForLine(inputFile, i.line());
                     revision.ifPresent(r -> createInlineComment(r, inputFile, i));
+                    if (!revision.isPresent()) {
+                        logger.debug("Unable to find line {} on file {} in revisions {}",
+                                i.line(), inputFile, configuration.commitHashes());
+                    }
                     report.update(i, gitLabApiFacade.getGitLabUrl(configuration.commitHashes().get(0), inputFile,
                             i.line()), revision.isPresent());
                 });
@@ -98,13 +102,15 @@ public class CommitIssuePostJob implements PostJob {
     }
 
     private void createInlineComment(String revision, InputFile inputFile, PostJobIssue issue) {
-        logger.debug("Create inline comment for rule key {} on file {} with revision {}", issue.ruleKey(), inputFile,
-                revision);
+        logger.debug("Create inline comment for rule key {} on file {} and line {} with revision {}", issue.ruleKey(),
+                inputFile, issue.line(), revision);
         String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString());
 
         boolean exists = gitLabApiFacade.getCommitCommentsForFile(revision, inputFile)
                 .stream()
                 .anyMatch(c -> c.getLine().equals(Integer.toString(issue.line())) && c.getNote().equals(body));
+        logger.debug("Inline comment already present on revision {} for file {} on line {}",
+                revision, inputFile, issue.line());
         if (!exists) {
             gitLabApiFacade.createInlineComment(revision, inputFile, issue.line(), body);
         }

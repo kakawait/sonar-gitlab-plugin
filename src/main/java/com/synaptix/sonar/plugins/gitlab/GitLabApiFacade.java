@@ -33,6 +33,7 @@ import org.sonar.api.utils.log.Loggers;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,7 +72,7 @@ public class GitLabApiFacade {
 
     private Map<String, List<CommitComment>> commitCommentPerRevision;
 
-    private Map<String, Map<String, Set<Integer>>> patchPositionByFile;
+    private Map<String, Map<String, Set<Line>>> patchPositionByFile;
 
     private File gitBaseDir;
 
@@ -145,13 +146,27 @@ public class GitLabApiFacade {
         return patchPositionByFile.values().stream().anyMatch(e -> e.containsKey(getPath(inputFile)));
     }
 
-    Optional<String> getRevisionForLine(InputFile inputFile, int line) {
-        logger.debug("find revision for given file {} on line {}", inputFile, line);
+    Optional<String> getRevisionForLine(InputFile inputFile, int lineNumber) {
+        String value = null;
+        try {
+            value = Files.readAllLines(inputFile.path()).get(lineNumber - 1);
+        } catch (IOException e) {
+            // do nothing
+        }
+        Line line = new Line(lineNumber, value);
+        String path = getPath(inputFile);
+        logger.debug("try to find revision for given file {} = {} on {}", inputFile, path, line);
         return patchPositionByFile
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue().entrySet().stream()
-                              .anyMatch(v -> v.getKey().equals(getPath(inputFile)) && v.getValue().contains(line)))
+                              .peek(v -> logger.debug("{} -> {} equals? {}", v.getKey(), v.getValue(), line))
+                              .anyMatch(v -> {
+                                  logger.debug("v.getKey().equals(\"" + path + "\") => " + v.getKey().equals(path));
+                                  logger.debug("v.getValue().contains(\"" + line + "\") => " + v.getValue().contains(line));
+                                  return v.getKey().equals(path) && v.getValue().contains(line);
+                              }))
+                .peek(e -> logger.debug("matches {}", e))
                 .map(Map.Entry::getKey)
                 .findFirst();
     }
@@ -179,6 +194,9 @@ public class GitLabApiFacade {
     void createInlineComment(String revision, InputFile inputFile, Integer line, String body) {
         String path = getPath(inputFile);
         try {
+            logger.debug("gitlab-api create commit comment with parameters: " +
+                    "id={}, sha={}, note={}, path={}, line={}", gitLabProject.getId(), revision, body,
+                    path, line.toString());
             gitLabApi.createCommitComment(gitLabProject.getId(), revision, body, path, line.toString(),
                     "new");
         } catch (IOException e) {
@@ -244,8 +262,8 @@ public class GitLabApiFacade {
      *
      * @throws IOException If any issue when fetching GitLab API.
      */
-    private Map<String, Map<String, Set<Integer>>> getPatchPositionsToLineMapping(List<String> revisions) throws IOException {
-        Map<String, Map<String, Set<Integer>>> result = new HashMap<>();
+    private Map<String, Map<String, Set<Line>>> getPatchPositionsToLineMapping(List<String> revisions) throws IOException {
+        Map<String, Map<String, Set<Line>>> result = new HashMap<>();
 
         for (String revision : revisions) {
             result.put(revision,
@@ -257,8 +275,8 @@ public class GitLabApiFacade {
         return result;
     }
 
-    private Set<Integer> getPositionsFromPatch(String patch) {
-        Set<Integer> positions = new HashSet<>();
+    private Set<Line> getPositionsFromPatch(String patch) {
+        Set<Line> positions = new HashSet<>();
 
         int currentLine = -1;
         for (String line : patch.split("\n")) {
@@ -268,8 +286,12 @@ public class GitLabApiFacade {
                     throw new IllegalStateException("Unable to parse line:\n\t" + line + "\nFull patch: \n\t" + patch);
                 }
                 currentLine = Integer.parseInt(matcher.group(1));
-            } else if (line.startsWith("+") || line.startsWith(" ")) {
-                positions.add(currentLine);
+            } else if (line.startsWith("+")) {
+                positions.add(new Line(currentLine, line.replaceFirst("\\+", "")));
+                currentLine++;
+            } else if (line.startsWith(" ")) {
+                // Can't comment line if not addition or deletion due to following bug
+                // https://gitlab.com/gitlab-org/gitlab-ce/issues/26606
                 currentLine++;
             }
         }
@@ -290,6 +312,46 @@ public class GitLabApiFacade {
     private void assertNotNull(Object value, String errorMessage) {
         if (value == null) {
             throw new IllegalArgumentException(errorMessage);
+        }
+    }
+
+    public static class Line {
+
+        private static final Logger logger = Loggers.get(Line.class);
+
+        private Integer number;
+
+        private String content;
+
+        Line(Integer number, String content) {
+            this.number = number;
+            this.content = content;
+        }
+
+        @Override
+        public String toString() {
+            return "Line{" + "number=" + number +
+                    ", content='" + content + '\'' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            logger.debug("equals? {} = {}", o, this);
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Line line = (Line) o;
+            return Objects.equals(number, line.number) &&
+                    Objects.equals(content, line.content);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(number, content);
         }
     }
 
