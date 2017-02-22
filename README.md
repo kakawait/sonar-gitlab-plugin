@@ -20,8 +20,9 @@ Add build line:
 
 For SonarQube >=5.4:
 
-- Download last version http://nexus.talanlabs.com/content/groups/public_release/com/synaptix/sonar-gitlab-plugin/1.7.0/sonar-gitlab-plugin-1.7.0.jar
-- Copy file in extensions directory `SONARQUBE_HOME/extensions/plugins`
+- Download last version https://github.com/kakawait/sonar-gitlab-plugin/releases/tag/1.9.0
+- Uncompress zip or tarball
+- Copy jar file in extensions directory `SONARQUBE_HOME/extensions/plugins`
 - Restart SonarQube
 
 # Command line
