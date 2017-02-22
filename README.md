@@ -38,10 +38,10 @@ mvn --batch-mode verify sonar:sonar -Dsonar.analysis.mode=preview -Dsonar.issues
 | sonar.gitlab.max_global_issues | Maximum number of anomalies to be displayed in the global comment |  Administration, Variable |
 | sonar.gitlab.user_token | Token of the user who can make reports on the project, either global or per project |  Administration, Project, Variable |
 | sonar.gitlab.project_id | Project ID in GitLab or internal id or namespace + name or namespace + path or url http or ssh url or url or web | Project, Variable |
-| sonar.gitlab.commit_hases | Hashes of the commits to be comment | Variable |
+| sonar.gitlab.commit_hashes | Hashes of the commits to be comment | Variable |
 | sonar.gitlab.ref_name | Branch name or reference of the commit | Variable |
-| sonar.gitlab.failure_notification_mode | Failure mode. Can be "commit-status" or "status-code" | 
-| sonar.gitlab.ignore_ssl | Ignore SSL error when contacting GitLab API | 
+| sonar.gitlab.failure_notification_mode | Failure mode. Can be "commit-status" or "status-code" | Variable |
+| sonar.gitlab.ignore_ssl | Ignore SSL error when contacting GitLab API | Variable |
 
 - Administration : **Settings** globals in SonarQube
 - Project : **Settings** of project in SonarQube
