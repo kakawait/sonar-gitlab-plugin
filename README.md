@@ -29,7 +29,7 @@ For SonarQube >=5.4:
 Example :
 
 ``` shell
-mvn --batch-mode verify sonar:sonar -Dsonar.analysis.mode=preview -Dsonar.issuesReport.console.enable=true  -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.gitlab.url=${CI_PROJECT_URL%$CI_PROJECT_PATH} -Dsonar.analysis.mode=preview -Dsonar.issuesReport.console.enable=true -Dsonar.gitlab.commit_hashes=$(git log --pretty=format:%H origin/master..$CI_BUILD_REF | tr '\n' ',') -Dsonar.gitlab.ref_name=${CI_BUILD_REF_NAME} -Dsonar.gitlab.project_id=${CI_PROJECT_ID} -Dsonar.gitlab.user_token=${GITLAB_SONAR_USER_TOKEN} -Dsonar.gitlab.failure_notification_mode=status-code 
+mvn --batch-mode verify sonar:sonar -Dsonar.analysis.mode=preview -Dsonar.issuesReport.console.enable=true  -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.gitlab.url=${CI_PROJECT_URL%$CI_PROJECT_PATH} -Dsonar.issuesReport.console.enable=true -Dsonar.gitlab.commit_hashes=$(git log --pretty=format:%H origin/master..$CI_BUILD_REF | tr '\n' ',') -Dsonar.gitlab.ref_name=${CI_BUILD_REF_NAME} -Dsonar.gitlab.project_id=${CI_PROJECT_ID} -Dsonar.gitlab.user_token=${GITLAB_SONAR_USER_TOKEN} -Dsonar.gitlab.failure_notification_mode=status-code 
 ```
 
 | Variable | Comment | Type |
