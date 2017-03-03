@@ -103,6 +103,7 @@ public class GitLabApiFacade {
             patchPositionByFile = getPatchPositionsToLineMapping(configuration.commitHashes());
             logger.debug("patch position by file and hashes {}", patchPositionByFile);
         } catch (IOException e) {
+        	logger.error("Unable to perform GitLab WS operation", e);
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
     }
