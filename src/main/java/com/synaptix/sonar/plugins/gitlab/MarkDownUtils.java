@@ -19,12 +19,6 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.sonar.api.CoreProperties;
-import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.rule.Severity;
-import org.sonar.api.config.Settings;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -34,13 +28,21 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.sonar.api.CoreProperties;
+import org.sonar.api.batch.InstantiationStrategy;
+import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.batch.rule.Severity;
+import org.sonar.api.config.Settings;
+
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 @ScannerSide
 public class MarkDownUtils {
 
     private static final String SONAR_HOST_URL_PROPERTY_KEY = "sonar.host.url";
 
-    private static final String INLINE_ISSUE_COMMENT_TEMPLATE = "%s %s %s";
+	private static final String INLINE_ISSUE_COMMENT_TEMPLATE = "%s %s %s";
+
+	private static final String INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE = "%s %s %s %s";
 
     private static final String GLOBAL_ISSUE_COMMENT_TEMPLATE = "%s %s (%s) %s";
 
@@ -105,14 +107,20 @@ public class MarkDownUtils {
      *
      * @throws IllegalArgumentException if one of the method parameter is null.
      */
-    String inlineIssue(Severity severity, String message, String ruleKey) {
+	String inlineIssue(Severity severity, String message, String ruleKey, String author) {
         assertNotNull(severity, "severity must not be null");
         assertNotNull(message, "message must not be null");
         assertNotNull(ruleKey, "ruleKey must not be null");
 
         String ruleLink = getRuleLink(ruleKey);
 
-        return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message, ruleLink);
+		if (author == null) {
+			return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message,
+					ruleLink);
+		} else {
+			return String.format(INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE, getEmojiForSeverity(severity), "@" + author,
+					message, ruleLink);
+		}
     }
 
     /**

@@ -19,6 +19,11 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
+import javax.annotation.Nonnull;
+
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.postjob.PostJob;
@@ -28,11 +33,6 @@ import org.sonar.api.batch.postjob.issue.PostJobIssue;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-
-import java.util.Optional;
-import java.util.stream.StreamSupport;
-
-import javax.annotation.Nonnull;
 
 /**
  * Compute comments to be added on the commit.
@@ -104,7 +104,9 @@ public class CommitIssuePostJob implements PostJob {
     private void createInlineComment(String revision, InputFile inputFile, PostJobIssue issue) {
         logger.debug("Create inline comment for rule key {} on file {} and line {} with revision {}", issue.ruleKey(),
                 inputFile, issue.line(), revision);
-        String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString());
+		String username = gitLabApiFacade.getUsernameForRevision(revision);
+		String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString(),
+				username);
 
         boolean exists = gitLabApiFacade.getCommitCommentsForFile(revision, inputFile)
                 .stream()
