@@ -208,17 +208,16 @@ public class GitLabApiFacade {
         }
     }
 
-    String getUsernameForRevision(String revision) {
+    Optional<String> getUsernameForRevision(String revision) {
 	try {
 	    GitlabCommit commit = gitLabApi.getCommit(gitLabProject.getId(), revision);
 	    List<GitlabUser> users = gitLabApi.findUsers(commit.getAuthorEmail());
 	    Optional<String> username = users.stream().filter(x -> commit.getAuthorEmail().equals(x.getEmail()))
 		    .map(GitlabUser::getUsername).findFirst();
-	    return username.orElse(null);
+	    return username;
 	} catch (IOException e) {
 	    throw new IllegalStateException("Unable to create retrive author for commit " + revision, e);
 	}
-
     }
 
     private String getPath(InputPath inputPath) {
