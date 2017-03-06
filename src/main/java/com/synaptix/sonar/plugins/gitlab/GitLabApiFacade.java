@@ -19,17 +19,8 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.gitlab.api.GitlabAPI;
-import org.gitlab.api.models.CommitComment;
-import org.gitlab.api.models.GitlabCommitDiff;
-import org.gitlab.api.models.GitlabProject;
-import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.InputPath;
-import org.sonar.api.scan.filesystem.PathResolver;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,8 +38,19 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
+import org.gitlab.api.GitlabAPI;
+import org.gitlab.api.models.CommitComment;
+import org.gitlab.api.models.GitlabCommit;
+import org.gitlab.api.models.GitlabCommitDiff;
+import org.gitlab.api.models.GitlabProject;
+import org.gitlab.api.models.GitlabUser;
+import org.sonar.api.batch.InstantiationStrategy;
+import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputPath;
+import org.sonar.api.scan.filesystem.PathResolver;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 
 /**
  * Facade for all WS interaction with GitLab.
@@ -103,6 +105,7 @@ public class GitLabApiFacade {
             patchPositionByFile = getPatchPositionsToLineMapping(configuration.commitHashes());
             logger.debug("patch position by file and hashes {}", patchPositionByFile);
         } catch (IOException e) {
+        	logger.error("Unable to perform GitLab WS operation", e);
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
     }
@@ -205,8 +208,20 @@ public class GitLabApiFacade {
         }
     }
 
+    Optional<String> getUsernameForRevision(String revision) {
+	try {
+	    GitlabCommit commit = gitLabApi.getCommit(gitLabProject.getId(), revision);
+	    List<GitlabUser> users = gitLabApi.findUsers(commit.getAuthorEmail());
+	    Optional<String> username = users.stream().filter(x -> commit.getAuthorEmail().equals(x.getEmail()))
+		    .map(GitlabUser::getUsername).findFirst();
+	    return username;
+	} catch (IOException e) {
+	    throw new IllegalStateException("Unable to create retrive author for commit " + revision, e);
+	}
+    }
+
     private String getPath(InputPath inputPath) {
-        return new PathResolver().relativePath(gitBaseDir, inputPath.file());
+	return new PathResolver().relativePath(gitBaseDir, inputPath.file());
     }
 
     private File findGitBaseDir(@Nullable File baseDir) {

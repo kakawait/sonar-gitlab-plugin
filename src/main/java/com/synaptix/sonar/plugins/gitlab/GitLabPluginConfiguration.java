@@ -19,17 +19,14 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.CheckForNull;
+
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.config.Settings;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.annotation.CheckForNull;
 
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 @ScannerSide
@@ -98,5 +95,10 @@ public class GitLabPluginConfiguration {
     @CheckForNull
     String statusNotificationMode() {
         return settings.getString(GitLabPlugin.GITLAB_STATUS_NOTIFICATION_MODE);
+    }
+
+    @CheckForNull
+    boolean pingUser() {
+	return settings.getBoolean(GitLabPlugin.GITLAB_PING_USER);
     }
 }
