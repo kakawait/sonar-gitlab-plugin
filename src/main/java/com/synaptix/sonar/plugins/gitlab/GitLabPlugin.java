@@ -19,16 +19,16 @@
  */
 package com.synaptix.sonar.plugins.gitlab;
 
-import org.sonar.api.Plugin;
-import org.sonar.api.PropertyType;
-import org.sonar.api.config.PropertyDefinition;
-import org.sonar.api.resources.Qualifiers;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+
+import org.sonar.api.Plugin;
+import org.sonar.api.PropertyType;
+import org.sonar.api.config.PropertyDefinition;
+import org.sonar.api.resources.Qualifiers;
 
 public class GitLabPlugin implements Plugin {
 
@@ -43,6 +43,7 @@ public class GitLabPlugin implements Plugin {
     static final String GITLAB_BUILD_INIT_STATE = "sonar.gitlab.build_init_state";
     static final String GITLAB_DISABLE_GLOBAL_COMMENT = "sonar.gitlab.disable_global_comment";
     static final String GITLAB_STATUS_NOTIFICATION_MODE = "sonar.gitlab.failure_notification_mode";
+    static final String GITLAB_PING_USER = "sonar.gitlab.ping_user";
 
     static final List<String> BUILD_INIT_STATES = Collections.unmodifiableList(Arrays.asList("pending", "running"));
     private static final List<String> STATUS_NOTIFICATIONS_MODE = Collections.unmodifiableList(
@@ -161,6 +162,14 @@ public class GitLabPlugin implements Plugin {
                         .options(STATUS_NOTIFICATIONS_MODE)
                         .index(11)
                         .defaultValue("commit-status")
+			.build(),
+		PropertyDefinition.builder(GITLAB_PING_USER).name("Ping the user")
+			.description("Ping the user who made an issue by @ mentioning.")//
+			.category(CATEGORY)
+			.subCategory(REPORTING_SUBCATEGORY)//
+			.type(PropertyType.BOOLEAN)//
+			.defaultValue(String.valueOf(false))//
+			.index(12)
                         .build()
         );
     }

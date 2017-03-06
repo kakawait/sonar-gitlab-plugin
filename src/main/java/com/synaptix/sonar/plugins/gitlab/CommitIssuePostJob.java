@@ -104,7 +104,7 @@ public class CommitIssuePostJob implements PostJob {
     private void createInlineComment(String revision, InputFile inputFile, PostJobIssue issue) {
         logger.debug("Create inline comment for rule key {} on file {} and line {} with revision {}", issue.ruleKey(),
                 inputFile, issue.line(), revision);
-	String username = gitLabApiFacade.getUsernameForRevision(revision);
+	String username = configuration.pingUser() ? gitLabApiFacade.getUsernameForRevision(revision) : null;
 	String body = markDownUtils.inlineIssue(issue.severity(), issue.message(), issue.ruleKey().toString(),
 		username);
 
