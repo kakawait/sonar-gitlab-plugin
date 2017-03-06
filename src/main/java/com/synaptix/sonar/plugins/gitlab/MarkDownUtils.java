@@ -40,9 +40,9 @@ public class MarkDownUtils {
 
     private static final String SONAR_HOST_URL_PROPERTY_KEY = "sonar.host.url";
 
-	private static final String INLINE_ISSUE_COMMENT_TEMPLATE = "%s %s %s";
+    private static final String INLINE_ISSUE_COMMENT_TEMPLATE = "%s %s %s";
 
-	private static final String INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE = "%s %s %s %s";
+    private static final String INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE = "%s %s %s %s";
 
     private static final String GLOBAL_ISSUE_COMMENT_TEMPLATE = "%s %s (%s) %s";
 
@@ -107,20 +107,19 @@ public class MarkDownUtils {
      *
      * @throws IllegalArgumentException if one of the method parameter is null.
      */
-	String inlineIssue(Severity severity, String message, String ruleKey, String author) {
+    String inlineIssue(Severity severity, String message, String ruleKey, String author) {
         assertNotNull(severity, "severity must not be null");
         assertNotNull(message, "message must not be null");
         assertNotNull(ruleKey, "ruleKey must not be null");
 
         String ruleLink = getRuleLink(ruleKey);
 
-		if (author == null) {
-			return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message,
-					ruleLink);
-		} else {
-			return String.format(INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE, getEmojiForSeverity(severity), "@" + author,
-					message, ruleLink);
-		}
+	if (author == null) {
+	    return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message, ruleLink);
+	} else {
+	    return String.format(INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE, getEmojiForSeverity(severity), "@" + author,
+		    message, ruleLink);
+	}
     }
 
     /**
