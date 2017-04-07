@@ -162,14 +162,15 @@ public class GitLabPlugin implements Plugin {
                         .options(STATUS_NOTIFICATIONS_MODE)
                         .index(11)
                         .defaultValue("commit-status")
-			.build(),
-		PropertyDefinition.builder(GITLAB_PING_USER).name("Ping the user")
-			.description("Ping the user who made an issue by @ mentioning.")//
-			.category(CATEGORY)
-			.subCategory(REPORTING_SUBCATEGORY)//
-			.type(PropertyType.BOOLEAN)//
-			.defaultValue(String.valueOf(false))//
-			.index(12)
+                        .build(),
+                PropertyDefinition
+                        .builder(GITLAB_PING_USER).name("Ping the user")
+                        .description("Ping the user who made an issue by @ mentioning.")
+                        .category(CATEGORY)
+                        .subCategory(REPORTING_SUBCATEGORY)
+                        .type(PropertyType.BOOLEAN)
+                        .defaultValue(String.valueOf(false))
+                        .index(12)
                         .build()
         );
     }

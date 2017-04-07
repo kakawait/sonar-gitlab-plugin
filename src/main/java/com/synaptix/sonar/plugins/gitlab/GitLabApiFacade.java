@@ -86,7 +86,6 @@ public class GitLabApiFacade {
      * Init GitLab connection and any necessary information that will be used during analysis.
      *
      * @param projectBaseDir project base directory.
-     *
      * @throws IllegalStateException if unable to find git base dir or any errors when fetching GitLab API.
      */
     void init(File projectBaseDir) {
@@ -105,7 +104,7 @@ public class GitLabApiFacade {
             patchPositionByFile = getPatchPositionsToLineMapping(configuration.commitHashes());
             logger.debug("patch position by file and hashes {}", patchPositionByFile);
         } catch (IOException e) {
-        	logger.error("Unable to perform GitLab WS operation", e);
+            logger.error("Unable to perform GitLab WS operation", e);
             throw new IllegalStateException("Unable to perform GitLab WS operation", e);
         }
     }
@@ -164,11 +163,7 @@ public class GitLabApiFacade {
                 .stream()
                 .filter(e -> e.getValue().entrySet().stream()
                               .peek(v -> logger.debug("{} -> {} equals? {}", v.getKey(), v.getValue(), line))
-                              .anyMatch(v -> {
-                                  logger.debug("v.getKey().equals(\"" + path + "\") => " + v.getKey().equals(path));
-                                  logger.debug("v.getValue().contains(\"" + line + "\") => " + v.getValue().contains(line));
-                                  return v.getKey().equals(path) && v.getValue().contains(line);
-                              }))
+                              .anyMatch(v -> v.getKey().equals(path) && v.getValue().contains(line)))
                 .peek(e -> logger.debug("matches {}", e))
                 .map(Map.Entry::getKey)
                 .findFirst();
@@ -190,16 +185,15 @@ public class GitLabApiFacade {
             String revision = configuration.commitHashes().get(0);
             gitLabApi.createCommitComment(gitLabProject.getId(), revision, comment, null, null, null);
         } catch (IOException e) {
-            throw new IllegalStateException(String.format("Unable to comment the commit (%s)", comment) , e);
+            throw new IllegalStateException(String.format("Unable to comment the commit (%s)", comment), e);
         }
     }
 
     void createInlineComment(String revision, InputFile inputFile, Integer line, String body) {
         String path = getPath(inputFile);
         try {
-            logger.debug("gitlab-api create commit comment with parameters: " +
-                    "id={}, sha={}, note={}, path={}, line={}", gitLabProject.getId(), revision, body,
-                    path, line.toString());
+            logger.debug("gitlab-api create commit comment with parameters: id={}, sha={}, note={}, path={}, line={}",
+                    gitLabProject.getId(), revision, body, path, line.toString());
             gitLabApi.createCommitComment(gitLabProject.getId(), revision, body, path, line.toString(),
                     "new");
         } catch (IOException e) {
@@ -209,19 +203,20 @@ public class GitLabApiFacade {
     }
 
     Optional<String> getUsernameForRevision(String revision) {
-	try {
-	    GitlabCommit commit = gitLabApi.getCommit(gitLabProject.getId(), revision);
-	    List<GitlabUser> users = gitLabApi.findUsers(commit.getAuthorEmail());
-	    Optional<String> username = users.stream().filter(x -> commit.getAuthorEmail().equals(x.getEmail()))
-		    .map(GitlabUser::getUsername).findFirst();
-	    return username;
-	} catch (IOException e) {
-	    throw new IllegalStateException("Unable to create retrive author for commit " + revision, e);
-	}
+        try {
+            GitlabCommit commit = gitLabApi.getCommit(gitLabProject.getId(), revision);
+            List<GitlabUser> users = gitLabApi.findUsers(commit.getAuthorEmail());
+            return users.stream()
+                        .filter(x -> commit.getAuthorEmail().equals(x.getEmail()))
+                        .map(GitlabUser::getUsername)
+                        .findFirst();
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to create retrive author for commit " + revision, e);
+        }
     }
 
     private String getPath(InputPath inputPath) {
-	return new PathResolver().relativePath(gitBaseDir, inputPath.file());
+        return new PathResolver().relativePath(gitBaseDir, inputPath.file());
     }
 
     private File findGitBaseDir(@Nullable File baseDir) {
@@ -274,7 +269,6 @@ public class GitLabApiFacade {
      * to the correct position.
      *
      * @return Map corresponding of Revision -> File path -> List of Position.
-     *
      * @throws IOException If any issue when fetching GitLab API.
      */
     private Map<String, Map<String, Set<Line>>> getPatchPositionsToLineMapping(List<String> revisions) throws IOException {

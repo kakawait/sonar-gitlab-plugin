@@ -99,6 +99,6 @@ public class GitLabPluginConfiguration {
 
     @CheckForNull
     boolean pingUser() {
-	return settings.getBoolean(GitLabPlugin.GITLAB_PING_USER);
+        return settings.getBoolean(GitLabPlugin.GITLAB_PING_USER);
     }
 }

@@ -66,7 +66,6 @@ public class MarkDownUtils {
      * If {@value org.sonar.api.CoreProperties#SERVER_BASE_URL} is configured, it will be used over the sonar host URL.
      *
      * @param settings SonarQube settings in order to get SonarQube url.
-     *
      * @throws IllegalArgumentException if missing SonarQube base url.
      */
     public MarkDownUtils(Settings settings) {
@@ -90,7 +89,6 @@ public class MarkDownUtils {
      * Returns the markdown emoji text for a violation severity.
      *
      * @param severity issue severity to be mapped.
-     *
      * @return An {@link String} representing a markdown <i>Emoji</i>.
      */
     static String getEmojiForSeverity(Severity severity) {
@@ -101,11 +99,9 @@ public class MarkDownUtils {
      * Format a rule violation for display inline with other information.
      *
      * @param severity issue severity to be used to get icon.
-     * @param message message to be display.
-     * @param ruleKey reference to rule, will be transformed to link to SonarQube instance.
-     *
+     * @param message  message to be display.
+     * @param ruleKey  reference to rule, will be transformed to link to SonarQube instance.
      * @return inline comment that will be posted to GitLab commit.
-     *
      * @throws IllegalArgumentException if one of the method parameter is null.
      */
     String inlineIssue(Severity severity, String message, String ruleKey, Optional<String> author) {
@@ -114,26 +110,22 @@ public class MarkDownUtils {
         assertNotNull(ruleKey, "ruleKey must not be null");
 
         String ruleLink = getRuleLink(ruleKey);
+        String emoji = getEmojiForSeverity(severity);
 
-	if (!author.isPresent()) {
-	    return String.format(INLINE_ISSUE_COMMENT_TEMPLATE, getEmojiForSeverity(severity), message, ruleLink);
-	} else {
-	    return String.format(INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE, getEmojiForSeverity(severity),
-		    "@" + author.get(), message, ruleLink);
-	}
+        return author
+                .map(s -> String.format(INLINE_ISSUE_WITH_AUTHOR_COMMENT_TEMPLATE, emoji, "@" + s, message, ruleLink))
+                .orElseGet(() -> String.format(INLINE_ISSUE_COMMENT_TEMPLATE, emoji, message, ruleLink));
     }
 
     /**
      * Build an entry for the global issues / rule violations comment.
      *
-     * @param severity issue severity to be used to get icon.
-     * @param message message to be display.
-     * @param ruleKey reference to rule, will be transformed to link to SonarQube instance.
+     * @param severity     issue severity to be used to get icon.
+     * @param message      message to be display.
+     * @param ruleKey      reference to rule, will be transformed to link to SonarQube instance.
      * @param url
      * @param componentKey
-     *
      * @return global comment that will be posted to GitLab commit.
-     *
      * @throws IllegalArgumentException if one of the method parameter is null.
      */
     String globalIssue(Severity severity, String message, String ruleKey, @Nullable String url, String componentKey) {
@@ -171,7 +163,6 @@ public class MarkDownUtils {
             throw new IllegalArgumentException(errorMessage);
         }
     }
-
 
 
 }
